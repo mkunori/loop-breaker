@@ -254,6 +254,52 @@ test("MASTERY celebrates the command, expires, and does not replay on Import", a
     )
     .toBe("none");
 });
+test("opening a sheet resets its shared scroll position", async ({ page }) => {
+  // Keep each project's width; a shorter viewport makes all source sheets scrollable.
+  await page.setViewportSize({
+    width: page.viewportSize()?.width ?? 320,
+    height: 400,
+  });
+  await importSave(page, fixture("prestige"));
+  const dialog = page.getByRole("dialog");
+  const close = async () => {
+    // Escape closes without a click that could itself scroll the sheet to its heading.
+    await page.keyboard.press("Escape");
+    await expect(dialog).not.toBeVisible();
+  };
+  const expectTop = async () => {
+    await expect(dialog).toBeVisible();
+    await expect
+      .poll(() => dialog.evaluate((e) => e.scrollTop))
+      .toBeLessThanOrEqual(1);
+  };
+  const scrollBottom = async () => {
+    await expect(dialog).toBeVisible();
+    await dialog.evaluate((e) => {
+      e.scrollTop = e.scrollHeight;
+    });
+    await expect
+      .poll(() => dialog.evaluate((e) => e.scrollTop))
+      .toBeGreaterThan(0);
+  };
+  await page.getByRole("button", { name: "設定・Save" }).click();
+  await scrollBottom();
+  await close();
+  await page.getByRole("button", { name: /Prestige ·/ }).click();
+  await expectTop();
+  await expect(dialog.locator(".soul-banner")).toBeInViewport({ ratio: 1 });
+  await close();
+  await page.getByRole("button", { name: "UPGRADES ↗" }).click();
+  await scrollBottom();
+  await close();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
+  await expectTop();
+  await scrollBottom();
+  await close();
+  await page.getByRole("button", { name: "設定・Save" }).click();
+  await expectTop();
+});
+
 test("failed images preserve layout and accessible labels", async ({
   page,
 }) => {

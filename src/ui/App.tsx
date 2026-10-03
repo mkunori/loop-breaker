@@ -96,6 +96,7 @@ export function App({ runtime }: { runtime: GameRuntime }) {
   useEffect(() => {
     if (sheet) {
       dialog.current?.showModal();
+      if (dialog.current) dialog.current.scrollTop = 0;
     } else {
       dialog.current?.close();
       opener.current?.focus();

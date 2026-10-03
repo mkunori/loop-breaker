@@ -68,4 +68,3 @@ python scripts/optimize_assets.py source-manifest.json
 既存40件を維持し、Zone境界10ケースと17枚のWebP/alpha/寸法/容量検証を追加して単体・統合51件。既存E2E18件に4シナリオ×320/360/PCを追加して30件。全Zoneの画像デコード・404なし、Boss、固定Arena、購入48px、重要数値の非遮蔽、BURST固定DOM、巨大表示、二種類のReduced Motion、MASTERY/期限/Import非再生、失敗fallback、横スクロールなし、pageerrorなしを確認する。
 
 lint・typecheck・単体/統合51件・E2E30件・production buildはすべて成功。buildのbaseは /loop-breaker/。レビュー画像は [review/ISSUE_5_VISUAL_REVIEW.md](review/ISSUE_5_VISUAL_REVIEW.md)。ゲーム計算・balance設定・Save・runtime・既存テストは変更していない。iOS Safari実機の画面ロック/スクロール/描画負荷は未確認で、ブラウザ自動検証はChromium。公開・deploy・新機能・バランス調整はこのIssueに含めない。
-

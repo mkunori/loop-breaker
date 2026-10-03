@@ -217,6 +217,8 @@ def check_design():
         assert 260 < rows[2].seconds < 300  # No artificial 300-second floor.
         assert rows[1].levels["speed"] == 2 and rows[2].levels["crit"] == 2
         assert rows[2].burst_at == 204 and rows[2].burst_stage == 70
+        assert math.isclose(sum(r.seconds for r in rows[:2]) + rows[2].burst_at,
+                            2582.99, abs_tol=.01)
         assert rows[0].burst_at is None and rows[1].burst_at is None
         assert rows[9].seconds > rows[7].seconds
         assert rows[11].seconds > rows[9].seconds

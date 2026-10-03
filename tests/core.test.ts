@@ -170,6 +170,39 @@ describe("advance and commands", () => {
     }).state;
     expect(capped.run.upgrades.speed).toBe(1);
   });
+  it.each([0, 1, 2])("refuses deepen before three Prestiges (p=%s)", (p) => {
+    const s = farmState();
+    s.meta.prestigeCount = p;
+    expect(math.canDeepen(s)).toBe(false);
+    expect(command(s, { type: "deepen" }).state).toEqual(s);
+  });
+  it("refuses deepen until the current target is actually CLEARed", () => {
+    const s = initialState();
+    s.meta.prestigeCount = 3;
+    s.run.targetStage = math.requiredStage(3);
+    for (const stage of [1, s.run.targetStage]) {
+      s.run.routeClears = math.boundary(stage);
+      s.run.highestClearedStage = stage === 1 ? 0 : stage - 1;
+      expect(math.canDeepen(s)).toBe(false);
+      expect(command(s, { type: "deepen" }).state).toEqual(s);
+    }
+  });
+  it("deepens one step after each target CLEAR and refuses repeated commands", () => {
+    const s = farmState();
+    s.meta.prestigeCount = 3;
+    s.run.targetStage = math.requiredStage(3);
+    s.run.routeClears = math.boundary(s.run.targetStage) + 1;
+    s.run.highestClearedStage = s.run.targetStage;
+    expect(math.canDeepen(s)).toBe(true);
+    const next = command(s, { type: "deepen" }).state;
+    expect(next.run.targetStage).toBe(175);
+    expect(next.run.routeClears).toBe(s.run.routeClears);
+    expect(math.canDeepen(next)).toBe(false);
+    expect(command(next, { type: "deepen" }).state).toEqual(next);
+    next.run.routeClears = math.boundary(175) + 1;
+    next.run.highestClearedStage = 175;
+    expect(command(next, { type: "deepen" }).state.run.targetStage).toBe(200);
+  });
   it("does not bank farm clears for deeper routes", () => {
     const s = farmState();
     s.meta.prestigeCount = 3;
@@ -180,6 +213,12 @@ describe("advance and commands", () => {
     const deep = command(farmed, { type: "deepen" }).state;
     expect(math.stageAt(deep)).toBe(100);
     expect(deep.run.routeClears).toBe(239);
+    expect(deep.run.targetStage).toBe(125);
+    expect(command(deep, { type: "deepen" }).state.run.targetStage).toBe(125);
+    const resumed = advance(deep, 0.001).state;
+    expect(resumed.run.routeClears).toBe(240);
+    expect(resumed.run.highestClearedStage).toBe(100);
+    expect(math.stageAt(resumed)).toBe(101);
     mock.mockRestore();
   });
   it("Prestige rewards once, without waiting, and keeps permanent settings/statistics", () => {

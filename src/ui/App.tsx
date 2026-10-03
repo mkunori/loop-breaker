@@ -9,6 +9,7 @@ import { PRESENTATION } from "../config/presentation";
 import {
   boundary,
   bulkPrice,
+  canDeepen,
   canPrestige,
   cap,
   clearTime,
@@ -317,6 +318,7 @@ export function App({ runtime }: { runtime: GameRuntime }) {
         {s.meta.prestigeCount >= 3 && (
           <button
             type="button"
+            disabled={!canDeepen(s) || view.fatal}
             onClick={() => runtime.dispatch({ type: "deepen" })}
           >
             さらに進む +{BALANCE.stage.deepen}
@@ -447,8 +449,9 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               <div className="soul-banner">
                 SOUL <strong>{format(s.meta.soul)}</strong>
                 <small>
-                  今回 +{format(soulReward(s))} · 必要Stage{" "}
-                  {requiredStage(s.meta.prestigeCount)}をCLEAR
+                  {canPrestige(s)
+                    ? `今回 +${format(soulReward(s))} SOUL`
+                    : `Stage ${requiredStage(s.meta.prestigeCount)} CLEARでPrestige可能`}
                 </small>
               </div>
               <p>

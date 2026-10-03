@@ -128,3 +128,76 @@ test("BURST displays aggregate results, survives reload and exits at deeper stag
   await page.clock.runFor(200);
   await expect(page.getByText("AUTO BATTLE", { exact: true })).toBeVisible();
 });
+
+test("Prestige only displays this cycle's SOUL reward after eligibility", async ({
+  page,
+}) => {
+  await importSave(page, fixture("prestige"));
+  await page.getByRole("button", { name: /Prestige ·/ }).click();
+  await page.getByRole("button", { name: "Prestigeする", exact: true }).click();
+  await page
+    .getByRole("button", { name: "ResetしてPrestigeを確定", exact: true })
+    .click();
+  await expect(page.locator(".soul-banner small")).toHaveText(
+    "Stage 100 CLEARでPrestige可能",
+  );
+  await expect(
+    page.getByRole("button", { name: "Prestigeする", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "閉じる", exact: true }).click();
+
+  const raw = JSON.parse(fixture("prestige"));
+  raw.meta.prestigeCount = 1;
+  raw.run.routeClears = 238;
+  raw.run.clears = "238";
+  raw.run.highestClearedStage = 99;
+  await importSave(page, JSON.stringify(raw));
+  await page.getByRole("button", { name: /Prestige ·/ }).click();
+  await expect(page.getByTestId("stage")).toHaveText("100");
+  await expect(page.locator(".soul-banner small")).toHaveText(
+    "Stage 100 CLEARでPrestige可能",
+  );
+  await page.clock.runFor(5000);
+  await expect(page.locator(".soul-banner small")).toHaveText("今回 +8 SOUL");
+  await expect(
+    page.getByRole("button", { name: "Prestigeする", exact: true }),
+  ).toBeEnabled();
+});
+
+test("deepen unlocks only after each current target CLEAR", async ({
+  page,
+}) => {
+  await importSave(page, fixture("prestige"));
+  const deepen = page.getByRole("button", {
+    name: "さらに進む +25",
+    exact: true,
+  });
+  await expect(deepen).toHaveCount(0);
+  await importSave(page, fixture("burst"));
+  await expect(deepen).toBeDisabled();
+
+  const raw = JSON.parse(fixture("burst"));
+  raw.run.routeClears = 359;
+  raw.run.clears = "100000";
+  raw.run.highestClearedStage = 150;
+  raw.run.phase = 0;
+  raw.stats.totalClears = "100000";
+  raw.stats.highestStage = 150;
+  raw.automation.atkEnabled = false;
+  await importSave(page, JSON.stringify(raw));
+  await expect(deepen).toBeEnabled();
+  await deepen.click();
+  await expect(
+    page.getByText("STAGE / TARGET 175", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByTestId("stage")).toHaveText("150");
+  await expect(deepen).toBeDisabled();
+  await page.clock.runFor(60000);
+  await expect(page.getByTestId("stage")).toHaveText("175");
+  await expect(deepen).toBeEnabled();
+  await deepen.click();
+  await expect(
+    page.getByText("STAGE / TARGET 200", { exact: true }),
+  ).toBeVisible();
+  await expect(deepen).toBeDisabled();
+});

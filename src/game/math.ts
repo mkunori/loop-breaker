@@ -124,6 +124,8 @@ export const soulReward = (s: GameState): Big =>
     .add(s.meta.prestigeCount === 1 ? BALANCE.soul.secondBonus : 0);
 export const canPrestige = (s: GameState): boolean =>
   s.run.highestClearedStage >= requiredStage(s.meta.prestigeCount);
+export const canDeepen = (s: GameState): boolean =>
+  s.meta.prestigeCount >= 3 && s.run.highestClearedStage >= s.run.targetStage;
 
 export interface Diagnostics {
   segments: number;

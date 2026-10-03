@@ -2,6 +2,7 @@ import { BALANCE, type PermanentId, type UpgradeId } from "../config/balance";
 import { closeBurst, type GameEvent, reconcileMode } from "./advance";
 import {
   bulkPrice,
+  canDeepen,
   canPrestige,
   cap,
   maxBuy,
@@ -62,11 +63,10 @@ export function command(
           : "通常強化の上限アップ",
     });
   } else if (cmd.type === "deepen") {
-    if (s.meta.prestigeCount >= 3) {
-      if (s.run.targetStage + BALANCE.stage.deepen > BALANCE.limits.stage)
-        throw new Error("Stage保護限界に達しました");
-      s.run.targetStage += BALANCE.stage.deepen;
-    }
+    if (!canDeepen(s)) return { state: s, events };
+    if (s.run.targetStage + BALANCE.stage.deepen > BALANCE.limits.stage)
+      throw new Error("Stage保護限界に達しました");
+    s.run.targetStage += BALANCE.stage.deepen;
   } else if (cmd.type === "auto") {
     if (!validBig(cmd.reserve)) throw new Error("予約Goldが不正です");
     s.automation.reserveGold = D(cmd.reserve);

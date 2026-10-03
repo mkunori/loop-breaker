@@ -24,7 +24,7 @@
 
 Stage開始境界は経路進行CLEAR `ceil(12 × (Stage−1)/5)`。初期Stage100への到達は238 CLEAR、そこで最低1周を完了した239 CLEARでPrestigeのStage条件を満たす。途中Stageの必要周回数は2または3。現在Cycleの到達目標までは自動でStageを上げ、目標到達後は同Stageで周回する。初回〜3Cycleの目標は100、その後150、200…と上がる。Stage100までは緩いHP上昇で圧縮を優先し、101以降は敵HP成長を強めて深度と成長を釣り合わせる。
 
-3回目Prestige以降は「さらに進む」で目標を25増やせる。必要Stageを1000で固定しない。技術上の数値保護限界を超えた場合は進行停止・Exportとし、限界StageのPrestigeを無制限に繰り返させない。各CLEARのGoldにStageごとの小さな倍率を掛け、Stage101以降は最大+5%で固定する。深いStageの即時メリットを保ち、Goldインフレの主因にはしない。
+3回目Prestige以降、現在のtargetStageを実際にCLEAR済みの場合のみ「さらに進む」で目標を25増やせる。目標への入場だけでは不可。+25直後は次の目標をCLEARするまで再実行できない。UIとgame commandで同じ条件を確認する。必要Stageを1000で固定しない。技術上の数値保護限界を超えた場合は進行停止・Exportとし、限界StageのPrestigeを無制限に繰り返させない。各CLEARのGoldにStageごとの小さな倍率を掛け、Stage101以降は最大+5%で固定する。深いStageの即時メリットを保ち、Goldインフレの主因にはしない。
 
 目標到達後の稼ぎCLEARは経路進行へ貯めない。総Cycle CLEARと、目標Stageの初CLEARまで進む経路進行CLEAR（routeClears）を別集計し、後者は目標で止める。「さらに進む」でも経路進行から再開するため、弱いStageで貯めた大量CLEARで深い敵を飛ばしてSOULを得ることはできない。過去CLEARへの新Stage倍率の遡及付与もない。通常の自動進行中は両CLEARが同じ値になる。
 
@@ -45,6 +45,8 @@ Prestige解禁は初回CycleでStage100を1周以上CLEAR。以後は現在Cycle
 必要Stageは `100 + 50 × max(0, prestigeCount−2)`（prestigeCountは完了済み回数）。次Cycleの目標はその必要Stage。100→100→100→150→200…と深くし、Stage101以降の敵HP成長と指数的な恒久強化価格で自然に間隔を調整する。4〜10Cycleの参考値は約3〜5分、11〜12Cycleは約5〜8分。永久にこのテンポを保証するものではなく、Stage550以降の長期曲線は追加検証する。AUTO Prestigeは設けない。
 
 Prestige画面に獲得SOUL、次Cycleの必要Stage、LOOP MASTERY報酬、通常強化の新しい上限、残るもの・リセットされるもの、予測Clear Timeを表示。「Prestigeする」を押すと同じパネル内で確認し確定する。開いたパネルは戦闘を止めないが、確定時に最新の条件を再判定する。予測は現在の恒久Lv・通常Lv0・Stage1・完了済み回数p+1（今回のLOOP MASTERY獲得後）に基づき、未購入SOUL強化を勝手に仮定しない。
+
+SOUL表示はPrestige可能な場合のみ「今回 +N SOUL」とする。未達成時は「Stage N CLEARでPrestige可能」と表示し、現在の未攻略深度から算出した未確定報酬を今回獲得扱いにしない。SOUL式・2回目ボーナスはそのまま維持する。
 
 リセット: Gold、通常強化全Lv、Cycle CLEAR、経路進行CLEAR、現在Stage、周回進捗、Cycle時間、Cycle内最高CLEAR Stage。保持: SOUL、恒久強化、Prestige回数、解禁フラグ、AUTO設定、累積統計、UI設定。SOULを付与し回数を増やす操作とResetは1トランザクション。
 

@@ -26,11 +26,18 @@ React 19 / TypeScript 7 / Vite 8 / Vitest 5 / Playwright 1.63 / break_infinity.j
 
 ## ローカル検証
 
-Windows / Node 24.21.0でlint、型検査、Vitest 35件、Chromium E2E 12件、production buildが成功した。E2Eは320×800、360×800、1280×900の3構成で同じ4シナリオを実行する。
+Windows / Node 24.21.0でlint、型検査、Vitest 40件、Chromium E2E 18件、production buildが成功した。E2Eは320×800、360×800、1280×900の3構成で同じ6シナリオを実行する。
 
 確認内容は自動戦闘、購入、全強化シート、Prestige二段階確認、永久強化、MASTERY、AUTO設定保持、BURST集計/Reload/通常復帰、Save Export/Import、破損入力、背景停止・再開。未処理のpageerrorがないこと、横スクロールがないこと、主要購入ボタンが48px以上であることも検証する。スクリーンショットで320pxの通常/BURSTを確認した。
 
 buildはGitHub Pages用base `/loop-breaker/` で成立。JS約272KB（gzip約84KB）、CSS約8.5KB（gzip約2.6KB）。外部画像・フォントへのネットワーク依存はない。
+
+### PR #4レビュー修正
+
+- 問題: Prestige 3回以降、目標未攻略でもdeepenを繰り返し実行できた。対応: `canDeepen`を共通判定とし、現在のtargetStageの実CLEARを必須にした。UIは未達成時disabled、commandはno-op。理由: 深化を目標攻略後の選択に限定し、一段ごとの挑戦を保つ。目標で稼いだ通常CLEARは経路進行へ転用しない。
+- 問題: 2Cycle目の開始直後などにも、2回目ボーナス込みの未確定SOULを「今回」と表示していた。対応: Prestige未達成時は必要StageのCLEAR条件のみ表示し、達成後だけ「今回 +N SOUL」とする。理由: 確定報酬との混同を避ける。SOUL式と2回目+4は変更していない。
+- 追加検証: Prestige 0/1/2回、3回以上の目標未入場/入場済み未CLEAR、目標CLEAR後+25、連続deepen拒否、次の目標CLEAR後の再深化、稼ぎCLEARを流用しない進行。UIでは2Cycle開始直後とStage100入場時に報酬を表示せず、CLEAR後に8 SOULを表示すること、深化ボタンが各目標のCLEARでのみ再有効化することを確認した。
+- 修正後も12Cycleの参考所要時間、25分時点4.8834秒/周、初BURST 3Cycle目は同じ。Save構造・balanceVersionに変更はない。
 
 ### バランスの再現
 

@@ -71,6 +71,8 @@ completed分のfor/while、敵・装備・ドロップ配列、乱数抽選は�
 
 目標での初CLEARまでrouteClearsを増やし、それ以降の稼ぎ周では固定する。総CLEAR/Goldは増やし続ける。deepen後は固定された経路進行から再開し、稼ぎ周数を攻略済みの深度に変換しない。
 
+deepenの共通判定は `prestigeCount >= 3 && highestClearedStage >= targetStage`。UIは条件未達で無効化し、command側も未達の要求をno-opにする。現在の目標を+25した後は、次の目標の実CLEARまで再深化できない。
+
 Best BURSTは完全な5秒窓だけ。Total Goldは支出前の獲得量、Fastest Clearは実際にCLEARした時の能力/Stageの理論時間の最小値（Stageも保存）、最高Stageは実際にCLEARしたStage。数値表示の都合でアニメーションを省略しても報酬は同一。
 
 ## 5. Stageが変わる区間の一括積分

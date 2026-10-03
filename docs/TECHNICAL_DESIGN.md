@@ -1,6 +1,6 @@
 # LOOP BREAKER — 技術設計 v2（PR #2レビュー反映）
 
-実装方針を定義する文書。本フェーズでsrc、package.json、CI、ゲーム本体は作成しない。実装時は [GAME_DESIGN](GAME_DESIGN.md) と [BALANCE_DESIGN](BALANCE_DESIGN.md) を仕様として使用する。
+実装方針を定義する文書。[GAME_DESIGN](GAME_DESIGN.md) と [BALANCE_DESIGN](BALANCE_DESIGN.md) を仕様として使用する。Issue #3で初期実装を追加した。具体的な構成・検証結果・仕様補足は [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) を参照。
 
 ## 1. 技術構成
 
@@ -71,6 +71,8 @@ completed分のfor/while、敵・装備・ドロップ配列、乱数抽選は�
 
 目標での初CLEARまでrouteClearsを増やし、それ以降の稼ぎ周では固定する。総CLEAR/Goldは増やし続ける。deepen後は固定された経路進行から再開し、稼ぎ周数を攻略済みの深度に変換しない。
 
+deepenの共通判定は `prestigeCount >= 3 && highestClearedStage >= targetStage`。UIは条件未達で無効化し、command側も未達の要求をno-opにする。現在の目標を+25した後は、次の目標の実CLEARまで再深化できない。
+
 Best BURSTは完全な5秒窓だけ。Total Goldは支出前の獲得量、Fastest Clearは実際にCLEARした時の能力/Stageの理論時間の最小値（Stageも保存）、最高Stageは実際にCLEARしたStage。数値表示の都合でアニメーションを省略しても報酬は同一。
 
 ## 5. Stageが変わる区間の一括積分
@@ -94,6 +96,8 @@ Goldも周回を列挙しない。G0=10×WEALTH、Stage<=100は倍率 `a+b×s`�
 
 elapsed以内に完了する最後のStageを単調二分探索（Stage450なら最大9比較、保護上限1e9でも最大30比較）し、最後のStageの追加2〜3周はfloor、残時間をphaseに戻す。到達capでは残り数百万〜1e12周も一定式1回。highestClearedStageは最後に完了した周のStageを用い、Stageに入っただけでは更新しない。
 
+初期実装では端Stageと完了周の境界を一つの探索にまとめ、必要な経路CLEAR境界を二分探索する。上限は約2.4×targetStageなので最大32比較（Stage450は最大11比較）。計算量は同じ対数で、目標到達後の大量CLEARには探索しない。HPの深層境界とGold上限を別々に変更できるよう、その境界の和集合で区間分割する。既定値は2ブロック、別の境界を設定した場合は最大3ブロックとなる。
+
 これにより1区間の計算量は `O(2×5 log capStage)`、周回数に依存しない。Stage目標が増えても境界周期と式を保てば対数。新Stage特性を追加するなら特性が一定の区間に分け、区間数を小さく保つ。敵ごとの条件分岐を後から各周へ持ち込まない。
 
 開発時に少数周だけの逐次参照実装をテスト内に置き、Stage跨ぎ一括式と比較する。製品には参照ループを使わない。高周回時にStageを固定するため計算結果を近似する必要はない。
@@ -103,6 +107,8 @@ elapsed以内に完了する最後のStageを単調二分探索（Stage450なら
 Gold、HP、Damage、DPS、ClearTime、rate、SOUL、CLEAR集計はDecimal。時間入力/AUTO時計/BURST時計/phaseはnumber。巨大ClearTimeをnumberへ変換して0やInfinityになってから計算しない。Timeが極端に小さい場合もrateをDecimalで掛ける。
 
 小さなCLEAR（<=2^53−1）は整数として扱い、phaseを保存する。floor近傍の丸め誤差は共通補助関数で吸収し、許容誤差は `4×Number.EPSILON×max(1,work)` を上限にする。1e12周の区間でGold/CLEAR相対誤差1e−12以内、完了数の誤差最大1周を許容する。既知のぴったり128/1e6/1e12周の入力は正しい整数結果になるよう境界テストする。細かい時間分割で毎回独自epsilonを加えない。
+
+初期実装では時間区間の小ささだけを理由に進行を捨てない。AUTO/BURSTの時計境界だけ `8×Number.EPSILON×窓秒数` の丸め範囲で閉じる。1e−11秒でも高速周回ではCLEARが発生するため、絶対値1e−10秒等の打ち切りは使わない。周回整数の丸めは上記共通規則に従う。
 
 work>2^53−1では1周単位のfloor/余りが表現できないため、指数表記の近似集計へ移行する。`approximateClears=true`を保存し、区間の完了量はDecimalの近似整数、phase=0とする。この段階では1周分より表現誤差が大きく、表示にも「約」を付ける。相対誤差目標1e−12、厳密な1周単位の統計・報酬保証はしない。通常速度へ戻った新Cycleではphaseを通常扱いへ戻せるが、生涯統計の近似フラグは保持する。
 

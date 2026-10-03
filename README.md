@@ -1,18 +1,46 @@
 # LOOP BREAKER
 
-自動戦闘の周回を30秒から5秒、1秒、さらに5秒で大量CLEARするBURSTへ圧縮していく、モバイル向けブラウザゲーム。
+自動戦闘の周回を30秒から5秒、1秒、さらに5秒で大量CLEARするBURSTへ圧縮していく、モバイル向けブラウザゲーム。Goldで通常強化を購入し、PrestigeでSOUL・LOOP MASTERY・強化上限を獲得します。
 
-現在は[Issue #1](https://github.com/mkunori/loop-breaker/issues/1)に基づく設計フェーズです。ゲーム本体は未実装です。
+React + TypeScript + Vite、通常CSS、break_infinity.jsを使用しています。バックエンドは不要です。SaveはlocalStorageに保存され、Export / Importできます。非表示中や終了中の進行はありません。複数タブで同時にプレイしないでください。
 
-- [ゲーム仕様](docs/GAME_DESIGN.md): 周回、Stage、解禁、Prestige、UI、原案からの調整
-- [バランス設計](docs/BALANCE_DESIGN.md): 数式、価格、12Cycleの進行・SOUL・初BURSTの数値検証
-- [技術設計](docs/TECHNICAL_DESIGN.md): 技術構成、一括計算、Save/Migration、自動テスト、実装手順
+Node.js 24とnpmを使用します。依存バージョンはpackage-lock.jsonで固定しています。
 
-設計用の計算はPython 3で再現できます（外部依存なし）。ゲーム本体の実装ではありません。
+```sh
+npm ci
+npm run dev
+```
+
+ブラウザで `http://127.0.0.1:5173/loop-breaker/` を開いてください。
+
+```sh
+npm run build
+npm run preview
+```
+
+production buildは `dist/` に出力します。previewは `http://127.0.0.1:4173/loop-breaker/`。ViteのbaseはGitHub Pages向けの `/loop-breaker/` です。公開・デプロイは別作業です。
+
+検証コマンド:
+
+```sh
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
+
+Playwrightはbuild済みのアプリを320px・360px・PC幅で確認します。Linuxでブラウザのシステム依存も必要な場合は `npx playwright install --with-deps chromium` を使用してください。GitHub ActionsはPRとmainへのpushで同じ検証を行います。フォーマットは `npm run format`。
+
+- [ゲーム仕様](docs/GAME_DESIGN.md): 周回・Stage・解禁・Prestige・UI
+- [バランス設計](docs/BALANCE_DESIGN.md): 数式・価格・12Cycleの参考進行
+- [技術設計](docs/TECHNICAL_DESIGN.md): 一括計算・Save/Migration・テスト
+- [初期実装の検証記録](docs/IMPLEMENTATION_NOTES.md): ファイル構成・仕様補足・検証結果・残課題
+
+設計用の参照計算はPython 3標準ライブラリだけで再現できます。
 
 ```sh
 python docs/balance/simulate.py
 python docs/balance/simulate.py --check
 ```
-
-参考ルートでは初回Prestige約30分23秒、2Cycle目約9分16秒、3Cycle目約4分36秒。最低Prestige時間は設けず、必要Stageと敵強度で進行を調整します。LOOP MASTERYと通常上限解放を明示的なPrestige報酬とし、初BURSTは3Cycle目の約3分24秒を想定しています。購入配分や操作の遅れで変化するため、実装後にプレイテストで調整します。

@@ -1,3 +1,9 @@
 # Design calculation artifacts
 __pycache__/
 *.pyc
+node_modules/
+dist/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.env.local

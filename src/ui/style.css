@@ -104,7 +104,7 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 .eyebrow {
   font-size: 10px;
@@ -116,6 +116,41 @@ h3 {
   font-size: 25px;
   letter-spacing: -1px;
   margin: 4px 0 0;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.asset-image {
+  display: block;
+}
+.asset-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.brand-logo {
+  width: 224px;
+  max-width: calc(100vw - 98px);
+  height: 56px;
+}
+.brand-logo .asset-fallback {
+  font-size: 23px;
+  letter-spacing: -1px;
+}
+.asset-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 46px;
+  color: var(--cyan);
 }
 .topbar h1 span {
   color: var(--cyan);
@@ -170,7 +205,9 @@ h3 {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 162px;
+  height: 144px;
+  position: relative;
+  z-index: 1;
 }
 .actor {
   display: flex;
@@ -183,21 +220,72 @@ h3 {
 .actor small {
   text-align: center;
 }
-.hero-shape,
-.enemy-shape {
-  font-size: 56px;
-  line-height: 70px;
-  text-shadow: 0 0 26px currentColor;
+.battle-scene {
+  position: relative;
+  height: 144px;
+  margin: 4px -8px;
+  border-radius: 12px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0b1426;
 }
-.hero-shape {
-  color: var(--cyan);
-  animation: hero-pulse 2s ease-in-out infinite;
+.scene-background {
+  position: absolute;
+  inset: 0;
 }
-.enemy-shape {
-  color: #ff9b85;
+.scene-background img {
+  object-fit: cover;
+  object-position: center 60%;
 }
-.enemy-shape.boss {
-  color: #c4a1ff;
+.scene-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(#0a142622, #0a142644 60%, #0a1426d9);
+}
+.hero-art,
+.enemy-art {
+  width: 98px;
+  height: 98px;
+  filter: drop-shadow(0 3px 8px #000b);
+}
+.hero-art {
+  animation: hero-pulse 3s ease-in-out infinite;
+}
+.enemy-art {
+  animation: enemy-hover 4s ease-in-out infinite;
+}
+.boss-art {
+  width: 110px;
+  filter: drop-shadow(0 0 7px #b68aff55);
+}
+.boss-actor > span:not(.asset-image) {
+  color: #e1b9ff;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.actor > span:not(.asset-image),
+.actor small {
+  background: #0a1426e8;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #e4f4ff;
+}
+.actor small {
+  color: #b8cbe3;
+}
+.versus {
+  position: relative;
+}
+.versus::after {
+  content: "";
+  position: absolute;
+  width: 28px;
+  height: 2px;
+  background: #7cebe566;
+  top: 50%;
+  left: -10px;
+  transform: rotate(-25deg);
+  animation: blade-pass 3s ease-in-out infinite;
 }
 .versus {
   color: #657b9b;
@@ -237,7 +325,9 @@ progress::-moz-progress-bar {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 12px;
+  padding: 6px 0 0;
+  border-top: 1px solid #2b3b54;
 }
 .arena-metrics > div:last-child {
   text-align: right;
@@ -290,9 +380,10 @@ progress::-moz-progress-bar {
 }
 .burst-arena {
   border-color: #78d7d0;
+  background: linear-gradient(145deg, #133336, #111f34 55%, #221b38);
 }
 .burst-visual {
-  height: 162px;
+  height: 144px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -305,18 +396,63 @@ progress::-moz-progress-bar {
   z-index: 1;
   color: var(--cyan);
 }
+.compressed .scene-background {
+  opacity: 0.35;
+}
+.burst-count {
+  z-index: 1;
+  max-width: 95%;
+  padding: 10px 16px;
+  text-align: center;
+  background: #081524ef;
+  border: 1px solid #7cebe54d;
+  border-radius: 10px;
+}
+.burst-count strong {
+  display: block;
+  font-size: clamp(20px, 6vw, 28px);
+  overflow-wrap: anywhere;
+}
+.burst-count small {
+  display: block;
+  margin-top: 6px;
+  color: #b3dbde;
+}
 .burst-visual small {
   z-index: 1;
 }
 .burst-ring {
   position: absolute;
-  width: 115px;
-  height: 115px;
-  border: 1px solid #7cebe555;
+  width: 148px;
+  height: 148px;
+  border: 3px solid #7cebe588;
+  border-left-color: transparent;
+  border-right-color: #b58eff;
   border-radius: 50%;
   box-shadow:
     0 0 30px #7cebe511,
     inset 0 0 25px #7cebe511;
+  animation: loop-spin 8s linear infinite;
+}
+.burst-ring::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border: 1px dashed #b58eff88;
+  border-radius: 50%;
+  border-top-color: transparent;
+}
+.compression-lines {
+  position: absolute;
+  inset: 20px 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 16px,
+    #7cebe522 17px 18px,
+    transparent 19px 30px
+  );
+  transform: skewY(-8deg);
+  animation: compression-flow 1s linear infinite;
 }
 .burst-result {
   font-size: 11px;
@@ -512,10 +648,11 @@ progress::-moz-progress-bar {
   font-size: 13px;
 }
 .soul-banner {
-  background: #243143;
+  background: linear-gradient(120deg, #392f4b, #1c2940);
+  border: 1px solid #987cb955;
   border-radius: 12px;
   padding: 16px;
-  color: #c2e99e;
+  color: #f1d08c;
 }
 .soul-banner strong {
   font-size: 30px;
@@ -528,10 +665,58 @@ progress::-moz-progress-bar {
 .milestones {
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 12px;
+  padding: 4px 12px;
+  background: linear-gradient(130deg, #b68aff0f, #7cebe509);
 }
 .milestones p {
-  margin-bottom: 8px;
+  margin: 0;
+  padding: 12px 0;
+}
+.milestones p + p {
+  border-top: 1px solid var(--line);
+}
+.mastery-celebration {
+  scroll-margin-top: 88px;
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 10px;
+  margin-bottom: 16px;
+  border: 1px solid #cda4f0;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #352e4e, #132d36);
+  animation: mastery-reveal 0.45s ease-out;
+}
+.mastery-celebration div {
+  min-width: 0;
+  flex: 1;
+}
+.mastery-celebration strong {
+  display: block;
+  color: #f5d694;
+  font-size: 22px;
+  letter-spacing: 2px;
+}
+.mastery-celebration div > span {
+  font-size: 11px;
+  color: #d1dded;
+}
+.mastery-celebration button {
+  padding: 0;
+  width: 48px;
+  flex-shrink: 0;
+  background: transparent;
+}
+.mastery-emblem {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 3px solid #7cebe5;
+  border-right-color: transparent;
+  border-radius: 50%;
+  transform: rotate(-25deg);
+  box-shadow: 0 0 14px #7cebe533;
 }
 .milestones b {
   color: var(--cyan);
@@ -576,12 +761,55 @@ fieldset small {
     transform: translateY(-4px);
   }
 }
-[data-reduced-motion="true"] * {
+@keyframes enemy-hover {
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes blade-pass {
+  0%,
+  75%,
+  100% {
+    opacity: 0;
+    transform: translateX(-6px) rotate(-25deg);
+  }
+  82% {
+    opacity: 0.7;
+    transform: translateX(9px) rotate(-25deg);
+  }
+}
+@keyframes loop-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes compression-flow {
+  to {
+    background-position: 0 30px;
+  }
+}
+@keyframes mastery-reveal {
+  from {
+    opacity: 0.4;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
   animation: none;
+  transition: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-shape {
+  .app *,
+  .app *::before,
+  .app *::after {
     animation: none;
+    transition: none;
   }
 }
 @media (max-width: 340px) {

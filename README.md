@@ -37,6 +37,8 @@ Playwrightはbuild済みのアプリを320px・360px・PC幅で確認します�
 - [バランス設計](docs/BALANCE_DESIGN.md): 数式・価格・12Cycleの参考進行
 - [技術設計](docs/TECHNICAL_DESIGN.md): 一括計算・Save/Migration・テスト
 - [初期実装の検証記録](docs/IMPLEMENTATION_NOTES.md): ファイル構成・仕様補足・検証結果・残課題
+- [Visual Design](docs/VISUAL_DESIGN.md): アート方向・Stage帯・モバイル優先事項
+- [Art Assets](docs/ART_ASSETS.md): オリジナル生成素材17枚・容量・最適化・演出・検証
 
 設計用の参照計算はPython 3標準ライブラリだけで再現できます。
 

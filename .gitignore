@@ -1,0 +1,3 @@
+# Design calculation artifacts
+__pycache__/
+*.pyc

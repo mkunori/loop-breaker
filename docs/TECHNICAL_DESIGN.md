@@ -1,4 +1,4 @@
-# LOOP BREAKER — 技術設計 v1
+# LOOP BREAKER — 技術設計 v2（PR #2レビュー反映）
 
 実装方針を定義する文書。本フェーズでsrc、package.json、CI、ゲーム本体は作成しない。実装時は [GAME_DESIGN](GAME_DESIGN.md) と [BALANCE_DESIGN](BALANCE_DESIGN.md) を仕様として使用する。
 
@@ -22,7 +22,7 @@ src/game/commands.ts        # buy、Prestige、deepen、AUTO設定
 src/game/number.ts          # Decimal生成/演算補助/表記/シリアライズ
 src/game/save.ts            # schema検証、migration、encode/decode
 src/platform/storage.ts    # localStorage読み書き
-src/platform/runtime.ts    # clock、visibility、単一writer、UI通知
+src/platform/runtime.ts    # clock、visibility、UI通知
 src/ui/App.tsx             # 画面とシート、表示用selector
 tests/                     # 純粋関数、Save fixture、統合、ブラウザ
 ```
@@ -31,13 +31,13 @@ tests/                     # 純粋関数、Save fixture、統合、ブラウザ
 
 ## 2. 設定と状態
 
-balance.tsの1オブジェクトに以下を集中させる: HP内訳と成長係数、攻撃/速度/Crit/Overkill/Delayの全係数、Gold/CLEAR、5強化の価格とGrowth、初期/後期上限、解禁CLEAR、恒久価格と効果、習熟配列、SOUL式係数/2回目ボーナス、Stage境界の12/5、初期目標100/増分50/上限1000、深化25、Prestige最短300秒、BURST閾値1/復帰1.1/窓5秒、将来の周回率倍率（初期1）。balanceVersionも持つ。UIから参照し、同じ数値を重複定義しない。
+balance.tsの1オブジェクトに以下を集中させる: HP内訳/初期成長1.002/Stage100超の追加成長1.020、攻撃/速度/Crit/Overkill/Delayの全係数、Gold/CLEARとStage倍率（増分.0005、上限+5%）、5強化の価格とGrowth、Prestige回数別の上限解放式、解禁CLEAR、恒久価格と効果、LOOP MASTERYの回数/名称/累積倍率、SOUL式係数/指数1.5/2回目ボーナス、Stage境界の12/5、初期目標100/増分50、深化25、BURST閾値1/復帰1.1/窓5秒、将来の周回率倍率（初期1）。balanceVersionはprototype-2。Prestige最低時間の設定は存在しない。UIから参照し、同じ数値を重複定義しない。
 
 presentation.tsにはUI通知100ms、AUTO判断1秒、Save5秒、演出上限5/秒、説明用桁数。AUTO間隔は収入に影響するため変更時はバランス検証も行う。設定検証で負数、成長係数1以下の価格、Crit率100%超、ゼロClearTime、整合しない上限を拒否する。
 
-所有するStateは現在Gold、通常Lv、Cycle CLEAR、周回進捗phase、Cycle表示中時間、現在目標Stage、Cycle最高CLEAR Stage、SOUL、恒久Lv、Prestige回数、生涯解禁、AUTO設定、集計統計、部分BURST、AUTO時計。Damage/DPS/HP/価格/現在Clear Timeは派生値。現在StageもCLEAR/目標から導出しSaveでは参考値としてのみ保存する。UI用の開いているシート、アニメ進捗、選択カードは永続化しない。
+所有するStateは現在Gold、通常Lv、Cycle CLEAR、経路進行routeClears、周回進捗phase、Cycle表示中時間、現在目標Stage、Cycle最高CLEAR Stage、SOUL、恒久Lv、Prestige回数、生涯解禁、AUTO設定、集計統計、部分BURST、AUTO時計。Damage/DPS/HP/価格/現在Clear Timeは派生値。現在StageはrouteClears/目標から導出しSaveでは参考値としてのみ保存する。LOOP MASTERYと通常上限はPrestige回数から導出し、Saveに重複フラグを追加しない。Cycle時間は統計専用。UI用の開いているシート、アニメ進捗、選択カードは永続化しない。
 
-固定範囲のLv/Stage/フラグはnumber/boolean。Lvは安全な整数かつ数値保護上限1,000,000以下（ATKのゲーム上の到達上限ではない）。Stage<=1000、Crit<=8。巨大量はDecimal。設定変更で保護限界を広げる時は再検証する。
+固定範囲のLv/Stage/フラグはnumber/boolean。Lvは安全な整数かつ数値保護上限1,000,000以下（ATKのゲーム上の到達上限ではない）、Crit<=8。Stage/目標は数値保護上限1,000,000,000以下。Required Stageを1000で打ち止めにはせず、保護限界を超える場合はExport可能な停止状態にして同StageのPrestige連打へ移行させない。routeClearsもnumberで、目標初CLEARの境界+1以下（最大約2.4e9）。巨大量はDecimal。設定変更で保護限界を広げる時は再検証する。
 
 ## 3. 時間の進め方とイベント順序
 
@@ -45,7 +45,7 @@ runtimeだけがperformance.now相当の単調時計を読む。rAFは演出に�
 
 1. 次のAUTO整数秒境界、BURST5秒境界、外部操作時刻までを時間区間として取る。
 2. その区間を購入前の一定能力で積分する。Stageは区間内でも変わるので後述のStage積分を使用する。
-3. CLEAR/Gold/統計/Cycle時間/Stage最高CLEAR/解禁をまとめて反映。
+3. CLEAR/Gold/経路進行/統計/Cycle時間/Stage最高CLEAR/解禁をまとめて反映。
 4. 同じ時刻ならBURSTを閉じてからAUTO購入、その後ユーザー操作。通知はまとめる。
 5. 能力を再計算して残区間を進める。
 
@@ -53,7 +53,7 @@ unlockは区間内の閾値通過で記録するが、自動で新能力を購�
 
 ユーザー購入時はその瞬間までadvanceしてからbuyを処理。phaseは0〜1の周回比率なので能力変更時も維持し、新ClearTimeの残り `(1−phase)×T` を使う。これは能力購入で現在周も速くなる仕様であり、開始時能力のスナップショットをSaveしない。
 
-Prestigeはadvance→条件再確認→部分BURSTを終了→SOUL付与/回数加算/Reset→保存。1回のCommand内で完結し、連打による二重付与を拒否する。UIは古い価格や可能判定を送らず、強化IDと操作だけ送る。
+Prestigeはadvance→必要StageのCLEAR条件再確認→部分BURSTを終了→SOUL付与/回数加算/Reset→保存。経過秒数は条件に含めない。1回のCommand内で完結し、連打による二重付与を拒否する。回数加算によりLOOP MASTERYと上限マイルストーンを導出し、UIへ1件の報酬サマリーを返す。UIは古い価格や可能判定を送らず、強化IDと操作だけ送る。
 
 ## 4. 一定Stageの一括計算
 
@@ -62,35 +62,39 @@ rate = 1 / ClearTime                     # Decimal
 work = phase + elapsed × rate
 completed = floor(work)
 phase = work − completed
-Gold += completed × goldPerClear
+Gold += completed × goldPerClear(currentStage)
 cycleClears += completed
 totalClears += completed
 ```
 
 completed分のfor/while、敵・装備・ドロップ配列、乱数抽選はしない。毎秒AUTO ATKの購入も幾何級数のMAX価格式で一括。BURSTの5秒集計は最大5つのAUTO区間と1つの端区間＋少数の手動購入境界を処理する。購入で変わった条件を5秒窓全体へ遡って適用しない。
 
+目標での初CLEARまでrouteClearsを増やし、それ以降の稼ぎ周では固定する。総CLEAR/Goldは増やし続ける。deepen後は固定された経路進行から再開し、稼ぎ周数を攻略済みの深度に変換しない。
+
 Best BURSTは完全な5秒窓だけ。Total Goldは支出前の獲得量、Fastest Clearは実際にCLEARした時の能力/Stageの理論時間の最小値（Stageも保存）、最高Stageは実際にCLEARしたStage。数値表示の都合でアニメーションを省略しても報酬は同一。
 
 ## 5. Stageが変わる区間の一括積分
 
-単に「5秒開始時のStageで全部計算」するとStage進行と報酬が不整合になる。初期から以下を採用する。capStageは現在目標、最大1000で、capに達した残時間は一定Stage式。
+単に「5秒開始時のStageで全部計算」するとStage進行と報酬が不整合になる。初期から以下を採用する。capStageは現在目標（Required Stageまたは任意深化）、capに達した残時間は一定Stage式。HPとStage Goldの係数が変わるStage101を境に最大2ブロックへ分ける。
 
-境界 `b(s)=ceil(12(s−1)/5)`。整数CLEAR nのStageは `min(capStage, 1+floor(5n/12))`。Stage sに属するCLEAR数は `q(s)=b(s+1)−b(s)`、周期5の `[3,2,3,2,2]`。capStageは残CLEAR全て同Stageとなる。現在の未完了周を処理した後、整数周境界から計算する。
+境界 `b(s)=ceil(12(s−1)/5)`。整数routeClears nのStageは `min(capStage, 1+floor(5n/12))`。Stage sに属するCLEAR数は `q(s)=b(s+1)−b(s)`、周期5の `[3,2,3,2,2]`。capStageは残CLEAR全て同Stageとなる。現在の未完了周を処理した後、整数周境界から計算する。
 
-未完了周の残時間よりelapsedが短ければphaseだけを進めて終了する。巨大CLEARをStage算出のためnumberへ変換しない。まずDecimalでcapの境界以上かを比較し、未到達の小さな範囲だけ整数numberへ変換する。
+未完了周の残時間よりelapsedが短ければphaseだけを進めて終了する。巨大総CLEARをStage算出のためnumberへ変換しない。経路カウンターは目標までの必要周だけを積分し、capでの大量周回はDecimalのまま集計する。
 
-一定能力の `T(s)=A × h^(s−1)+B`、ここでh=1.002、A=Mastery×240/(DPS×OverkillFactor)、B=Mastery×FixedDelay。Stage i…jの全周に必要な時間は:
+一定能力・同HPブロックの `T(s)=A × h^(s−offset)+B`。Stage<=100はh=1.002/offset=1、Stage>=101はh=1.02204/offset=101で、Aにはブロック先頭HP×LOOP MASTERY/(DPS×OverkillFactor)を使う。B=LOOP MASTERY×FixedDelay。Stage i…jの全周に必要な時間は:
 
 ```text
-time(i..j) = A × sum(q(s) × h^(s−1)) + B × sum(q(s))
+time(i..j) = A × sum(q(s) × h^(s−offset)) + B × sum(q(s))
 sum(q(s)) = b(j+1) − b(i)
 ```
 
-qは5周期なので、HP和を最大5本の幾何級数に分ける。各剰余群の先頭s0、項数mについて `q(s0) × h^(s0−1) × ((h^5)^m−1)/(h^5−1)`。途中の最初/最後Stageは残周数だけ計上する。h≈1はexpm1/log1pで安定化、h=1は項数の積。境界に一律epsilonを足すのでなく、数値誤差規則を共通化する。
+qは5周期なので、HP和を各ブロック最大5本の幾何級数に分ける。各剰余群の先頭s0、項数mについて `q(s0) × h^(s0−offset) × ((h^5)^m−1)/(h^5−1)`。途中の最初/最後Stageは残周数だけ計上する。h≈1はexpm1/log1pで安定化、h=1は項数の積。境界に一律epsilonを足すのでなく、数値誤差規則を共通化する。
 
-elapsed以内に完了する最後のStageを単調二分探索（最大10比較）し、最後のStageの追加2〜3周はfloor、残時間をphaseに戻す。到達capでは残り数百万〜1e12周も一定式1回。highestClearedStageは最後に完了した周のStageを用い、Stageに入っただけでは更新しない。
+Goldも周回を列挙しない。G0=10×WEALTH、Stage<=100は倍率 `a+b×s`（a=.9995、b=.0005）、Stage>=101はa=1.05/b=0。各ブロックのGold和は `G0×[a×sum(q(s))+b×sum(q(s)×s)]`。周期の各群は `sum(q×s)=q(s0)×m×[2s0+5(m−1)]/2` の等差数列で一括。終端の部分Stageとcapでの稼ぎは実際の周数×そのStage倍率で足す。Stage報酬の追加でも周回数比例処理を導入しない。
 
-これにより1区間の計算量は `O(5 log capStage)`、周回数に依存しない。capを将来増やす場合も境界周期と式を保てば対数。新Stage特性を追加するなら特性が一定の区間に分け、区間数を小さく保つ。敵ごとの条件分岐を後から各周へ持ち込まない。
+elapsed以内に完了する最後のStageを単調二分探索（Stage450なら最大9比較、保護上限1e9でも最大30比較）し、最後のStageの追加2〜3周はfloor、残時間をphaseに戻す。到達capでは残り数百万〜1e12周も一定式1回。highestClearedStageは最後に完了した周のStageを用い、Stageに入っただけでは更新しない。
+
+これにより1区間の計算量は `O(2×5 log capStage)`、周回数に依存しない。Stage目標が増えても境界周期と式を保てば対数。新Stage特性を追加するなら特性が一定の区間に分け、区間数を小さく保つ。敵ごとの条件分岐を後から各周へ持ち込まない。
 
 開発時に少数周だけの逐次参照実装をテスト内に置き、Stage跨ぎ一括式と比較する。製品には参照ループを使わない。高周回時にStageを固定するため計算結果を近似する必要はない。
 
@@ -117,12 +121,11 @@ localStorageにJSONを保存。現在・前回正常Saveの2スロット、合�
 ```json
 {
   "saveVersion": 1,
-  "balanceVersion": "prototype-1",
-  "revision": 1,
+  "balanceVersion": "prototype-2",
   "savedAt": "2026-10-03T00:00:00.000Z",
   "run": {
     "stage": 1, "targetStage": 100,
-    "gold": "0", "clears": "0", "phase": 0,
+    "gold": "0", "clears": "0", "routeClears": 0, "phase": 0,
     "activeSeconds": 0, "highestClearedStage": 0,
     "upgrades": {"atk": 0, "speed": 0, "crit": 0, "overkill": 0, "delay": 0},
     "approximateClears": false,
@@ -151,13 +154,15 @@ phase/時計/部分BURSTを保持してLoadで端数を失わない。savedAtは
 
 Loadはcurrent検証→失敗ならbackup→両方失敗なら新規開始の選択を提示。壊れたデータを自動で上書きしない。Importは最大32KB、JSON/schema/範囲/migrationを検証、プレビュー後に置換、現在Saveをバックアップする。ExportはJSONファイル。署名・暗号化・改ざん防止は不要。プレイヤーが自己編集できるゲーム。
 
-複数タブの二重進行を防ぐ: Web Locksが使える場合、`loop-breaker-writer`の排他ロックを持つタブだけ進行/保存。他は「別タブでプレイ中」の読み取り専用。未対応環境はlocalStorageの短期リース（タブID、TTL10秒、2秒更新）とstorage通知、書込直前の所有者確認で衝突を検出したら両方一時停止。リースは完全な原子ロックではないためrevision逆転時は復旧案を表示し、自動マージしない。タブID/リースはpayloadと別の小キー。
+初期リリースは単一タブ利用を前提とし、Web Locks、localStorage lease、revision競合復旧は必須要件から外す。設定/ヘルプに「複数タブで同時にプレイしないでください」を1行表示する程度とする。並行タブでは最後の保存が優先され、current/backupも排他制御ではない。安全な自動マージを保証しない。visibilitychangeの進行停止は維持する。
+
+将来対応としてWeb Locksによる単一writerを優先検討し、未対応環境のleaseやrevision競合検出は必要性を確認して別途設計する。初期のruntime/Saveスキーマ/受入テストへ予防的な複数タブ基盤を入れない。
 
 ## 8. Version / Migration
 
-saveVersionは構造変更、balanceVersionは式や価格変更。整数Save versionの純粋関数 `migrateV1ToV2` を順に適用し最後に全体検証する。Migrationにclockやネットワークを使わない。元payloadをバックアップ/Export可能にして、成功後だけ保存する。今はv1のみなので架空のv0 migrationを実装しない。
+saveVersionは構造変更、balanceVersionは式や価格変更。整数Save versionの純粋関数 `migrateV1ToV2` を順に適用し最後に全体検証する。Migrationにclockやネットワークを使わない。元payloadをバックアップ/Export可能にして、成功後だけ保存する。まだSaveを配布していない設計段階なので今回もschemaはv1、balanceVersionのみprototype-2とする。公開後にrouteClears等を追加する場合は構造migrationが必要。今は架空のv0 migrationを実装しない。
 
-追加フィールドは明示default、削除フィールドは破棄、ID変更はマッピング表を用意。新強化Lvは0、装備個体や履歴へ変換しない。balance変更ではGold/Lv/SOULを原則保持し派生値を再計算、phase比率を保持。Stageはrun.clears/targetから再計算し、保存stageとの差があれば表示用stageを修復する。上限縮小/通貨定義変更は個別の補償方針を書いてversionを上げ、勝手に切り捨てない。
+追加フィールドは明示default、削除フィールドは破棄、ID変更はマッピング表を用意。新強化Lvは0、装備個体や履歴へ変換しない。balance変更ではGold/Lv/SOULを原則保持し派生値を再計算、phase比率を保持。Stageはrun.routeClears/targetから再計算し、保存stageとの差があれば表示用stageを修復する。経路進行は0〜b(target)+1、総CLEAR以下を検証する。上限縮小/通貨定義変更は個別の補償方針を書いてversionを上げ、勝手に切り捨てない。
 
 未知の未来versionは読取/Importを拒否し元文字列をExport可能にする。開発中の不明versionを新規Saveで上書きしない。migration fixtureは各過去versionを最小1件、破損・不足・未来版も用意する。
 
@@ -168,31 +173,31 @@ saveVersionは構造変更、balanceVersionは式や価格変更。整数Save ve
 | Damage/DPS | 初期10/10、ATK Lv1=11.6、POWER1=17、Speed1×1.25、Crit1×1.2、Crit上限 |
 | 価格/MAX | ATK最初25/28.75、合計と逐次和、予算ぴったり/不足、上限、巨大Lvでも回数非依存 |
 | Overkill | Lv0=1、Lv1=1.15、再利用率、固定Delayに影響なし、期待値と表示式一致 |
-| ClearTime | 初期30、TEMPOが戦闘に適用されない、習熟全体適用、設定変更時の派生値更新 |
-| Stage | 0→1、3→2、12→6、238→100入場/239→100CLEAR、目標cap、深化、期間積分と少数参照計算 |
+| ClearTime | 初期30、TEMPOが戦闘に適用されない、LOOP MASTERY全体適用/累積倍率置換、設定変更時の派生値更新 |
+| Stage / Gold | 0→1、3→2、12→6、238→100入場/239→100CLEAR、Stage100/101のHP・Gold境界、目標で経路停止、深化に稼ぎCLEARを流用しない、時間/Gold積分と少数参照比較 |
 | SOUL | 100で4、2回目のみ8、150で7、未CLEAR Stage除外、条件未達0発行 |
-| Reset | Gold/Lv/phase/Cycle時間初期化、解禁/設定/統計/恒久Lv保持、二重コマンド拒否 |
+| Prestige / Reset | 必要Stage条件だけで即実行（299秒未満も可）、目標100/150/200上昇、Gold/Lv/routeClears/phase/Cycle時間初期化、上限・MASTERY導出、解禁/設定/統計/恒久Lv保持、二重コマンド拒否 |
 | AUTO | OFF時不購入、ONの1秒境界、予約Gold、区間途中unlock、購入前後で収入再計算 |
 | BURST | T=5/128/1e6/1e12ケース、端数繰越、途中購入、Stage跨ぎ、切替で二重報酬なし、部分窓はBest除外 |
 | 数値 | 1e42 Save往復、極小時間、2^53境界、NaN/負数拒否、相対誤差、巨大数formatter |
 | Save | 完全往復、partial BURST、破損backup復旧、書込失敗、未来version拒否、migration、サイズ上限 |
-| 中断 | hidden/復帰/Reloadでオフライン報酬なし、長delta5秒上限、複数タブ進行停止 |
+| 中断 | hidden/復帰/Reloadでオフライン報酬なし、長delta5秒上限。複数タブ排他は初期受入対象外 |
 
 一定能力/Stageでは5秒一括と0.1秒×50分割のGold/CLEAR/phaseを比較。Stage跨ぎでも一括と逐次参照が許容誤差内で一致すること。AUTO付きは同じ1秒境界を含む分割同士で比較する（異なる購入機会は同じ結果を要求しない）。
 
-シナリオテストに参考購入ポリシーを入れ、初回Prestige26〜35分、25分時点T4〜6秒、2Cycle8〜12分、3Cycle4〜6分＋300秒条件を検証する。シミュレーション上の値を全フレーム完全一致で固定せず、式単体は厳密な期待値、体験時間は許容帯で確認する。
+シナリオテストに参考購入ポリシーと実際のSOUL購入/繰越を入れ、初回Prestige26〜35分、25分時点T4〜6秒、2Cycle8〜12分、3Cycle4〜6分を検証する。4〜10Cycleの必要Stage/SOUL/恒久Lv/時間/初BURSTも設計用結果と比較し、12Cycleを深層の追加チェックにする。最低時間を待たず条件達成でPrestigeできること。シミュレーションの全フレーム完全一致は要求せず、式単体は厳密値、体験時間は許容帯で確認する。
 
-性能テストはelapsed5秒を固定して128/1e6/1e12CLEARの設定を比較。演算/イベント件数が周回数に依存しないことを計測し、一定Stageは区間あたり定数、Stage跨ぎは上限10比較×5系列、AUTO区間最大6に収まること。ベンチマークの絶対時間はCI機種依存なので合否を倍率/件数中心にし、実機スマホで5秒精算10ms以内・Save書込で目立つ停止なしを目標にする。
+性能テストはelapsed5秒を固定して128/1e6/1e12CLEARの設定を比較。演算/イベント件数が周回数に依存しないことを計測し、一定Stageは区間あたり定数、Stage跨ぎは最大30比較×2ブロック×5系列、AUTO区間最大6に収まること。Stage Goldを含めて検証する。ベンチマークの絶対時間はCI機種依存なので合否を倍率/件数中心にし、実機スマホで5秒精算10ms以内・Save書込で目立つ停止なしを目標にする。
 
 ブラウザ受入は360×800/320px/PC、購入・シート・Save復帰・Import・背景停止。最小限のChromium E2Eに加え、モバイルSafariは実機でvisibility/localStorage/片手到達範囲を確認する。画面からDebug時間加速を使わず、純粋エンジンへテスト時計を注入する。
 
 ## 10. 次の実装フェーズ
 
 1. この設計の追加案をレビューし、balance.tsと型、number/mathの純粋関数から作る。
-2. Stage積分・BURST・MAX・Prestigeをテストで固め、参考3Cycleを本体計算で再現する。
+2. Stage時間/Gold積分・BURST・MAX・Prestigeをテストで固め、参考12Cycleを本体計算で再現する。
 3. Save v1/検証/バックアップ/Export/Importとruntimeの表示中時間を実装する。
 4. モバイルの単一画面とシート、解禁説明、AUTOを接続する。
-5. 型検査、単体/統合/E2E、巨大数性能、実機の初回30分と3Cycleを検証する。
+5. 型検査、単体/統合/E2E、巨大数性能、実機の初回30分/新上限解放/初BURSTを検証する。
 6. 仕様差を設計書へ反映してレビュー可能なPRを作る。配信は実装依頼の範囲を確認して行う。
 
 完了条件は「見た目が動く」だけでなく、通常/BURST共通計算、全Save項目、背景停止、参考時間帯、周回数非依存、設定集中、テスト成立。後半未定の装備や新Prestige系を実装判断で付け足さない。

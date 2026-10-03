@@ -1,6 +1,6 @@
 # LOOP BREAKER — ゲーム設計 v2（PR #2レビュー反映）
 
-設計日: 2026-10-03。原案: [Issue #1](https://github.com/mkunori/loop-breaker/issues/1)。本書群は実装前の推奨仕様。数値の正本は [BALANCE_DESIGN.md](BALANCE_DESIGN.md)、処理・保存の正本は [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md)。ゲーム本体は今回作成しない。
+設計日: 2026-10-03。原案: [Issue #1](https://github.com/mkunori/loop-breaker/issues/1)。本書群は初期実装の仕様。数値の正本は [BALANCE_DESIGN.md](BALANCE_DESIGN.md)、処理・保存の正本は [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md)。Issue #3の初期実装・検証結果は [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) を参照。
 
 ## 1. 体験と対象範囲
 

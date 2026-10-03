@@ -2,6 +2,8 @@
 
 実装可能な初期モデル。時間は表示中の累積プレイ時間。[balance/simulate.py](balance/simulate.py) はPython標準ライブラリのみの設計用参照計算で、ゲーム本体ではない。最低Prestige時間を撤回し、段階的な通常上限とStage報酬を入れて、SOULの実支払い込みで12Cycleまで検証した。balanceVersion案は `prototype-2`。
 
+Issue #3の本体計算でもバランス値は変更せず12Cycleを検証した。1秒境界で参考購入を実行した結果は初回1824秒、2Cycle556秒、3Cycle277秒、25分時点4.8834秒/周、初BURSTは3Cycle。詳細は [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) を参照。
+
 ## 1. 基本式
 
 変数: Stage `s`、通常Lv `a,v,c,o,r`、恒久Lv `P,W,T`、完了済みPrestige回数 `p`。

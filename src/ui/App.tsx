@@ -6,6 +6,7 @@ import {
   type UpgradeId,
 } from "../config/balance";
 import { PRESENTATION } from "../config/presentation";
+import { VISUAL } from "../config/visual";
 import {
   boundary,
   bulkPrice,
@@ -30,6 +31,9 @@ import {
 import { D, format, scientific } from "../game/number";
 import { cloneState, type GameState } from "../game/state";
 import type { GameRuntime } from "../platform/runtime";
+import { AssetImage } from "./AssetImage";
+import { BattleVisual } from "./BattleVisual";
+import { MasteryCelebration } from "./MasteryCelebration";
 
 type Sheet = "upgrades" | "prestige" | "stats" | "settings" | null;
 const duration = (seconds: number) =>
@@ -187,8 +191,16 @@ export function App({ runtime }: { runtime: GameRuntime }) {
       <header className="topbar">
         <div>
           <span className="eyebrow">INCREMENTAL RPG</span>
-          <h1>
-            LOOP<span>BREAKER</span>
+          <h1 aria-label="LOOPBREAKER">
+            <AssetImage
+              src={VISUAL.logo}
+              className="brand-logo"
+              fallback="LOOP BREAKER"
+              width={720}
+              height={180}
+              testId="logo-image"
+            />
+            <span className="visually-hidden">LOOP BREAKER</span>
           </h1>
         </div>
         <button
@@ -219,40 +231,15 @@ export function App({ runtime }: { runtime: GameRuntime }) {
           <span>{burst.active ? "BURST MODE" : "AUTO BATTLE"}</span>
           <span>CYCLE {s.meta.prestigeCount + 1}</span>
         </div>
-        {burst.active ? (
-          <div className="burst-visual">
-            <span className="burst-ring" />
-            <strong>CLEAR ×{format(burst.clears)}</strong>
-            <small>Gold +{format(burst.gold)}</small>
-          </div>
-        ) : (
-          <div className="fighters">
-            <div className="actor">
-              <div className="hero-shape" aria-hidden="true">
-                ◇
-              </div>
-              <span>HERO</span>
-              <small>Damage {format(damage(s))}</small>
-            </div>
-            <div className="versus" aria-hidden="true">
-              ⚡
-            </div>
-            <div className="actor">
-              <div
-                className={`enemy-shape ${enemyIndex === 4 ? "boss" : ""}`}
-                aria-hidden="true"
-              >
-                {enemyIndex === 4 ? "⬟" : "◆"}
-              </div>
-              <span>
-                {enemyIndex === 4 ? "BOSS" : `ENEMY ${enemyIndex + 1}/4`}
-              </span>
-              <small>
-                HP {format(hp(stage).mul(enemyIndex === 4 ? 0.5 : 0.125))}
-              </small>
-            </div>
-          </div>
-        )}
+        <BattleVisual
+          stage={stage}
+          enemyIndex={enemyIndex}
+          damage={format(damage(s))}
+          hp={format(hp(stage).mul(enemyIndex === 4 ? 0.5 : 0.125))}
+          burst={burst.active}
+          clears={format(burst.clears)}
+          gold={format(burst.gold)}
+        />
         <div className="progress-label">
           <span>
             {burst.active
@@ -446,6 +433,10 @@ export function App({ runtime }: { runtime: GameRuntime }) {
           )}
           {sheet === "prestige" && (
             <>
+              <MasteryCelebration
+                count={s.meta.prestigeCount}
+                message={view.message}
+              />
               <div className="soul-banner">
                 SOUL <strong>{format(s.meta.soul)}</strong>
                 <small>

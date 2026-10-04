@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { command } from "../src/game/commands";
-import { boundary, clearTime, fixedDelay, stageAt } from "../src/game/math";
+import { clearTime, fixedDelay, mastery } from "../src/game/math";
 import { D } from "../src/game/number";
-import { decode, encode } from "../src/game/save";
 import { initialState } from "../src/game/state";
 import { playModel } from "./balance-model";
 
@@ -48,33 +47,29 @@ describe("15-minute BURST", () => {
   });
 });
 
-describe("published speed-3 compatibility", () => {
-  it.each([0, 1, 39, 40, 41, 3959, 3960, 3961])(
-    "preserves route %s Stage, resources and one-time conversion",
-    (route) => {
-      const raw = JSON.parse(encode(initialState()));
-      raw.balanceVersion = "speed-3";
-      raw.run.routeClears = route;
-      raw.run.highestClearedStage = route
-        ? Math.min(100, 1 + Math.floor((route - 1) / 40))
-        : 0;
-      raw.run.gold = "1234";
-      raw.run.clears = "239"; // previously migrated saves may have virtual route > CLEAR.
-      raw.stats.totalClears = "239";
-      raw.stats.highestStage = raw.run.highestClearedStage;
-      raw.run.phase = 0.75;
-      raw.meta.soul = "17";
-      raw.automation.reserveGold = "42";
-      const s = decode(JSON.stringify(raw));
-      expect(stageAt(s)).toBe(Math.min(100, 1 + Math.floor(route / 40)));
-      expect(s.run.highestClearedStage).toBe(raw.run.highestClearedStage);
-      expect(s.run.gold.eq(1234)).toBe(true);
-      expect(s.run.clears.eq(239)).toBe(true);
-      expect(s.meta.soul.eq(17)).toBe(true);
-      expect(s.run.phase).toBe(0.75);
-      expect(s.automation.reserveGold.eq(42)).toBe(true);
-      expect(decode(encode(s)).run.routeClears).toBe(s.run.routeClears);
-      if (route === 3961) expect(s.run.routeClears).toBe(boundary(100) + 1);
-    },
-  );
+describe("Immediate Prestige", () => {
+  it("reaches BURST with every target immediately reset, including deep-stage reversal", () => {
+    const result = playModel("immediate", 20);
+    console.log("Immediate Prestige:", result);
+    expect(result.burst).toBeGreaterThan(933);
+    expect(result.burst).toBeGreaterThan(1200);
+    expect(result.burst).toBeLessThan(1500);
+    expect(result.times[11]).toBeGreaterThan(result.times[9]);
+    expect(result.times[19]).toBeGreaterThan(result.times[17]);
+    const reference = [
+      354.03, 102.03, 45.74, 45.91, 41.41, 31.89, 27.85, 25.16, 22.61, 22.9,
+      23.15, 25.16, 41.4, 55.76, 86.64, 171.67, 348.43, 676.05, 2063.24,
+      4311.01,
+    ];
+    reference.forEach((t, i) => {
+      expect(Math.abs(result.times[i] - t)).toBeLessThan(Math.max(4, t * 0.01));
+    });
+  });
+  it("continues mastery after BREAK II without number underflow", () => {
+    expect(mastery(0).eq(1)).toBe(true);
+    expect(mastery(1).eq(0.55)).toBe(true);
+    expect(mastery(2).eq(0.36)).toBe(true);
+    expect(mastery(3).toNumber()).toBeCloseTo(0.36 * 0.88, 12);
+    expect(mastery(10000).gt(0)).toBe(true);
+  });
 });

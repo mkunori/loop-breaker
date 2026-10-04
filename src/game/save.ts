@@ -4,6 +4,8 @@ import { boundary, cap, requiredStage, stageAt } from "./math";
 import { type Big, D, scientific, validBig } from "./number";
 import { type GameState, initialState } from "./state";
 export const SAVE_VERSION = 1;
+export const UNSUPPORTED_BALANCE_MESSAGE =
+  "開発版の仕様変更により旧Saveは利用できません。新規開始してください。正式リリースまではBalance間のSave互換性を保証しません。";
 type JsonObject = Record<string, unknown>;
 const object = (v: unknown): JsonObject => {
   if (!v || typeof v !== "object" || Array.isArray(v))
@@ -70,6 +72,8 @@ export function decode(text: string): GameState {
     !Number.isFinite(Date.parse(root.savedAt))
   )
     throw new Error("SaveのVersion/日時が不正です");
+  if (root.balanceVersion !== BALANCE.version)
+    throw new Error(UNSUPPORTED_BALANCE_MESSAGE);
   const s = initialState(),
     r = object(root.run),
     m = object(root.meta),
@@ -112,59 +116,14 @@ export function decode(text: string): GameState {
   );
   s.run.gold = big(r.gold);
   s.run.clears = big(r.clears);
-  if (
-    root.balanceVersion === "prototype-2" ||
-    root.balanceVersion === "speed-3"
-  ) {
-    const legacy = root.balanceVersion === "prototype-2";
-    const oldNumerator = legacy ? 12 : 40;
-    const oldDenominator = legacy ? 5 : 1;
-    const oldBoundary = (stage: number) =>
-      Math.ceil((oldNumerator * (stage - 1)) / oldDenominator);
-    const route = numeric(
-      r.routeClears,
-      0,
-      oldBoundary(s.run.targetStage) + 1,
-      true,
-    );
-    const oldStage = Math.min(
-      s.run.targetStage,
-      1 + Math.floor((route * oldDenominator) / oldNumerator),
-    );
-    const oldHighest =
-      route === 0
-        ? 0
-        : Math.min(
-            s.run.targetStage,
-            1 + Math.floor(((route - 1) * oldDenominator) / oldNumerator),
-          );
-    if (
-      (legacy && s.run.clears.lt(route)) ||
-      r.highestClearedStage !== oldHighest
-    )
-      throw new Error("旧Saveの経路進行が不正です");
-    // Preserve Stage and intra-Stage route position, never award imaginary CLEAR/Gold.
-    r.routeClears =
-      route > oldBoundary(s.run.targetStage)
-        ? boundary(s.run.targetStage) + 1
-        : boundary(oldStage) +
-          (route === oldBoundary(oldStage)
-            ? 0
-            : Math.max(
-                1,
-                Math.floor(
-                  ((route - oldBoundary(oldStage)) *
-                    (boundary(oldStage + 1) - boundary(oldStage))) /
-                    (oldBoundary(oldStage + 1) - oldBoundary(oldStage)),
-                ),
-              ));
-  }
   s.run.routeClears = numeric(
     r.routeClears,
     0,
     boundary(s.run.targetStage) + 1,
     true,
   );
+  if (s.run.clears.lt(s.run.routeClears))
+    throw new Error("経路進行が総CLEARを超えています");
   s.run.phase = numeric(r.phase, 0, 1 - Number.EPSILON);
   s.run.activeSeconds = numeric(r.activeSeconds, 0, Number.MAX_SAFE_INTEGER);
   s.run.highestClearedStage = numeric(

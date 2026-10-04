@@ -418,7 +418,8 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                 ATKとRouteは待ち時間を共同で圧縮します。目標Stage攻略後も育成を続けられます。Prestigeするか、今のCycleでBURSTを目指すかを選べます。
               </p>
               <p>
-                LOOP MASTERY ×{mastery(s.meta.prestigeCount)} · 固定待ち{" "}
+                LOOP MASTERY ×{mastery(s.meta.prestigeCount).toPrecision(4)} ·
+                固定待ち{" "}
                 {formatTime(fixedDelay(s).mul(mastery(s.meta.prestigeCount)))}
               </p>
               {s.meta.unlocks.autoAtk && (
@@ -471,6 +472,12 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               <p>
                 次Cycle目標: Stage {requiredStage(s.meta.prestigeCount + 1)}
               </p>
+              {s.meta.prestigeCount >= 2 && !s.meta.unlocks.burst && (
+                <p>
+                  今のCycleでさらに圧縮するとBURSTを目指せます。Prestigeを続けてもLOOP
+                  MASTERYの継続短縮が育ちます。
+                </p>
+              )}
               <h3>LOOP MASTERY</h3>
               <div className="milestones">
                 <p>
@@ -488,6 +495,17 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                         ? "今回獲得"
                         : "2回目で獲得"}
                   </b>
+                </p>
+                <p>
+                  BREAK II以降 · 毎Prestigeで全周回時間 ×
+                  {BALANCE.masteryContinuation.factor} /{" "}
+                  {Math.round((1 - BALANCE.masteryContinuation.factor) * 100)}
+                  %短縮
+                  <br />
+                  現在の累積倍率 ×{mastery(s.meta.prestigeCount).toPrecision(4)}
+                  <br />
+                  次Prestigeの累積倍率 ×
+                  {mastery(s.meta.prestigeCount + 1).toPrecision(4)}
                 </p>
               </div>
               <h3>次回の通常強化上限</h3>
@@ -589,7 +607,7 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               <dt>Total Play Time</dt>
               <dd>{duration(s.stats.activeSeconds)}</dd>
               <dt>LOOP MASTERY</dt>
-              <dd>×{mastery(s.meta.prestigeCount)}</dd>
+              <dd>×{mastery(s.meta.prestigeCount).toPrecision(4)}</dd>
               <dt>経路進捗</dt>
               <dd>
                 {s.run.routeClears} / {boundary(s.run.targetStage) + 1}

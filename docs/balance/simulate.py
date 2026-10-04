@@ -14,7 +14,7 @@ CONFIG = {
     "unlock": {"speed": 6, "crit": 20, "overkill": 40, "delay": 70, "auto": 120},
     "base": {"atk": 35, "speed": 10, "crit": 10, "overkill": 10, "delay": 2000},
     "growth": {"atk": 1.12, "speed": 2.2, "crit": 2.2, "overkill": 2.2, "delay": 1.8},
-    "mastery": (1, .55, .36),
+    "mastery": (1, .55, .36), "mastery_growth": .88,
     "hp_growth": 1.002,
     "deep_hp_growth": 1.020,
     "stage_gold_step": .0005,
@@ -80,7 +80,7 @@ def clear_time(stage, levels, meta):
           * CONFIG["deep_hp_growth"] ** max(0, stage - 100))
     combat = hp / (dps * (1 + .15 * levels["overkill"]))
     delay = CONFIG["delay_base"] * 1 / (.60 ** (-levels["delay"]) + CONFIG["atk_delay"] ** (-levels["atk"]) - 1) * .85 ** meta.tempo
-    mastery = CONFIG["mastery"][min(meta.prestige_count, 2)]
+    mastery = CONFIG["mastery"][min(meta.prestige_count, 2)] * CONFIG["mastery_growth"] ** max(0, meta.prestige_count-2)
     return mastery * (combat + delay)
 
 
@@ -134,7 +134,7 @@ def simulate_cycle(meta, decision_interval=1, normal_policy="caps-first"):
     milestones = {}
     next_decision = decision_interval
     next_mark = 0.0
-    farm = meta.prestige_count == 2
+    farm = meta.prestige_count == 2 and normal_policy != "immediate"
     while clears < required_clears or (farm and burst_at is None):
         stage = min(target, 1 + math.floor(clears / CONFIG["route_density"]))
         current_time = clear_time(stage, levels, meta)
@@ -201,7 +201,7 @@ def simulate(cycles=10, decision_interval=1, normal_policy="caps-first", soul_po
 
 
 def print_results(rows):
-    print("LOOP MASTERY milestones: Prestige #1 BREAK I (x0.55); #2 BREAK II (cumulative x0.36).")
+    print(f"LOOP MASTERY: #1 x0.55; #2 cumulative x0.36; every Prestige after #2 x{CONFIG['mastery_growth']}.")
     print("| Prestige # | Required Stage | Cycle seconds | SOUL earned | P/W/T at start | SOUL carry | Start sec/run | End sec/run | First BURST in cycle |")
     print("|---:|---:|---:|---:|---|---:|---:|---:|---|")
     total = 0.0
@@ -237,25 +237,33 @@ def check_design():
         return sum(r.seconds for r in rs[:2]) + rs[2].burst_at
     assert total < first_burst("casual") < first_burst("auto-only")
     assert 1200 < first_burst("auto-only") < 1500
+    immediate = simulate(20, normal_policy="immediate")
+    first = next(r for r in immediate if r.burst_at is not None)
+    immediate_total = sum(r.seconds for r in immediate[:first.cycle-1]) + first.burst_at
+    assert total < immediate_total and 1200 < immediate_total < 1500
+    assert immediate[19].seconds > immediate[17].seconds
+    assert all(after.start_time < before.start_time for before, after in zip(immediate, immediate[1:]))
     assert rows[0].milestones[1][0] < 180
     assert rows[11].seconds > rows[9].seconds
     assert soul_reward(100, 0) == 4 and soul_reward(100, 1) == 8
-    for before, after in zip(rows, rows[1:]):
-        spent = sum(math.ceil((2 if axis == 2 else 1) * 1.7 ** level)
-                    for axis in range(3)
-                    for level in range(before.meta_start[axis], after.meta_start[axis]))
-        assert before.soul_start + before.earned_soul == spent + after.soul_start
-    print("Design checks passed: 5s start, pacing, milliseconds, BURST, SOUL ledger, late slowdown.")
+    for series in (rows, simulate(12, normal_policy="casual"), simulate(12, normal_policy="auto-only"), immediate):
+        for before, after in zip(series, series[1:]):
+            spent = sum(math.ceil((2 if axis == 2 else 1) * 1.7 ** level)
+                        for axis in range(3)
+                        for level in range(before.meta_start[axis], after.meta_start[axis]))
+            assert before.soul_start + before.earned_soul == spent + after.soul_start
+    print("Design checks passed: four policies, 12-20 cycles, 5s start, immediate BURST <=25min, SOUL ledger, late slowdown without reset regression.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cycles", type=int, default=10)
     parser.add_argument("--decision-interval", type=float, default=1)
-    parser.add_argument("--normal-policy", choices=["caps-first", "casual", "auto-only"], default="caps-first")
+    parser.add_argument("--normal-policy", choices=["caps-first", "immediate", "casual", "auto-only"], default="caps-first")
     parser.add_argument("--soul-policy", choices=["balanced", "power", "wealth", "tempo"], default="balanced")
     parser.add_argument("--soul-exponent", type=float, default=CONFIG["soul_exponent"])
     parser.add_argument("--burst-enter", type=float, default=CONFIG["burst_enter"], help="compare .1 / .01 / .001 second boundaries")
+    parser.add_argument("--mastery-growth", type=float, default=CONFIG["mastery_growth"], help="every Prestige after #2 multiplies Clear Time by this factor")
     parser.add_argument("--check", action="store_true", help="verify the adopted design and SOUL ledger")
     args = parser.parse_args()
     if not 1 <= args.cycles <= 100:
@@ -264,6 +272,9 @@ if __name__ == "__main__":
         parser.error("decision interval and soul exponent must be finite and positive")
     CONFIG["soul_exponent"] = args.soul_exponent
     CONFIG["burst_enter"] = args.burst_enter
+    if not math.isfinite(args.mastery_growth) or not 0 < args.mastery_growth <= 1:
+        parser.error("mastery growth must be finite and in (0, 1]")
+    CONFIG["mastery_growth"] = args.mastery_growth
     if args.check:
         check_design()
     else:

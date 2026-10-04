@@ -1,4 +1,4 @@
-> Issue #9の過去検証記録。現行仕様は[BURST_15_DESIGN](BURST_15_DESIGN.md)とBALANCE_DESIGN v4。
+> Issue #9の過去検証記録。現行仕様は[BURST_15_DESIGN](BURST_15_DESIGN.md)とBALANCE_DESIGN v4。当時のSave互換性対応はPR #12レビューで廃止。正式リリースまではBalance間のSave互換性を保証せず、異なる版は明示的に拒否する。
 
 # Issue #9: Clear Timeの桁を削る
 

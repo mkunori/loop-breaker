@@ -166,21 +166,21 @@ Loadはcurrent検証→失敗ならbackup→両方失敗なら新規開始の選
 
 ## 8. Version / Migration
 
-saveVersionは構造変更、balanceVersionは式や価格変更。整数Save versionの純粋関数 `migrateV1ToV2` を順に適用し最後に全体検証する。Migrationにclockやネットワークを使わない。元payloadをバックアップ/Export可能にして、成功後だけ保存する。公開Saveのschemaはv1を維持し、balanceVersionのみspeed-4へ更新する。公開後にrouteClears等を追加する場合は構造migrationが必要。今は架空のv0 migrationを実装しない。
+saveVersionは構造変更、balanceVersionは式や価格変更。**正式リリースまではBalance間のSave互換性を保証しない。** schema v1、balanceVersion speed-4を維持し、異なるBalanceはdecode/Importで明示的に拒否する。prototype-2 / speed-3の経路変換を削除し、旧版の暗黙読替えをしない。将来のschema migration registryは残し、登録された純粋関数を順に適用して最後に全体検証する。今は架空のv0 migrationを実装しない。Migrationにclockやネットワークを使わない。
 
-追加フィールドは明示default、削除フィールドは破棄、ID変更はマッピング表を用意。新強化Lvは0、装備個体や履歴へ変換しない。balance変更ではGold/Lv/SOULを原則保持し派生値を再計算、phase比率を保持。Stageはrun.routeClears/targetから再計算し、保存stageとの差があれば表示用stageを修復する。経路進行は0〜b(target)+1、総CLEAR以下を検証する。上限縮小/通貨定義変更は個別の補償方針を書いてversionを上げ、勝手に切り捨てない。
+将来のschema変更では追加フィールドのdefault、削除、ID mappingを個別に設計する。装備個体や履歴へ変換しない。現行BalanceのStageはrun.routeClears/targetから再計算し、保存stageとの差があれば表示用stageを修復する。経路進行は0〜b(target)+1かつ総CLEAR以下を検証する。Balance間の変換や補償を汎用registryへ詰め込まない。
 
-未知の未来versionは読取/Importを拒否し元文字列をExport可能にする。開発中の不明versionを新規Saveで上書きしない。migration fixtureは各過去versionを最小1件、破損・不足・未来版も用意する。
+不一致Balanceや未来schemaは読取/Importを拒否し元文字列をExport可能にする。current→backupの順に現行版を検証し、両方不可ならfatal/pausedで進行と自動保存を停止する。「開発版の仕様変更により旧Saveは利用できません。新規開始してください。」を表示する。不明versionを自動で新規Saveへ上書きしない。設定の二段階確認付き新規開始だけが置換を行う。現行版のroundtrip、backup復旧、Import拒否時の無変更、旧版拒否/原文保持/手動新規開始をテストする。prototype-2 / speed-3互換fixtureは廃止。
 
 ## 9. 自動テストと受入条件
 
 | 対象 | 必須検証 |
 |---|---|
-| Damage/DPS | 初期10/10、ATK Lv1=11.6、POWER1=17、Speed1×1.25、Crit1×1.2、Crit上限 |
-| 価格/MAX | ATK最初25/28.75、合計と逐次和、予算ぴったり/不足、上限、巨大Lvでも回数非依存 |
+| Damage/DPS | 初期60/60、ATK Lv1=69.6、POWER1=102、Speed1×1.25、Crit1×1.2、Crit上限 |
+| 価格/MAX | ATK最初35/39.2、合計と逐次和、予算ぴったり/不足、上限、巨大Lvでも回数非依存 |
 | Overkill | Lv0=1、Lv1=1.15、再利用率、固定Delayに影響なし、期待値と表示式一致 |
-| ClearTime | 初期30、TEMPOが戦闘に適用されない、LOOP MASTERY全体適用/累積倍率置換、設定変更時の派生値更新 |
-| Stage / Gold | 0→1、3→2、12→6、238→100入場/239→100CLEAR、Stage100/101のHP・Gold境界、目標で経路停止、深化に稼ぎCLEARを流用しない、時間/Gold積分と少数参照比較 |
+| ClearTime | 初期5、TEMPOが戦闘に適用されない、LOOP MASTERY全体適用/初期累積倍率置換/3回目以降12%短縮、設定変更時の派生値更新 |
+| Stage / Gold | 0→1、5→2、495→100入場/496→100CLEAR、Stage100/101のHP・Gold境界、目標で経路停止、深化に稼ぎCLEARを流用しない、時間/Gold積分と少数参照比較 |
 | SOUL | 100で4、2回目のみ8、150で7、未CLEAR Stage除外、条件未達0発行 |
 | Prestige / Reset | 必要Stage条件だけで即実行（299秒未満も可）、目標100/150/200上昇、Gold/Lv/routeClears/phase/Cycle時間初期化、上限・MASTERY導出、解禁/設定/統計/恒久Lv保持、二重コマンド拒否 |
 | AUTO | OFF時不購入、ONの1秒境界、予約Gold、区間途中unlock、購入前後で収入再計算 |
@@ -191,7 +191,7 @@ saveVersionは構造変更、balanceVersionは式や価格変更。整数Save ve
 
 一定能力/Stageでは5秒一括と0.1秒×50分割のGold/CLEAR/phaseを比較。Stage跨ぎでも一括と逐次参照が許容誤差内で一致すること。AUTO付きは同じ1秒境界を含む分割同士で比較する（異なる購入機会は同じ結果を要求しない）。
 
-シナリオテストに参考購入ポリシーと実際のSOUL購入/繰越を入れ、初回Prestige26〜35分、25分時点T4〜6秒、2Cycle8〜12分、3Cycle4〜6分を検証する。4〜10Cycleの必要Stage/SOUL/恒久Lv/時間/初BURSTも設計用結果と比較し、12Cycleを深層の追加チェックにする。最低時間を待たず条件達成でPrestigeできること。シミュレーションの全フレーム完全一致は要求せず、式単体は厳密値、体験時間は許容帯で確認する。
+シナリオテストに参考購入ポリシーと実際のSOUL購入/繰越を入れ、新規5秒、Active Farm初Prestige300〜360秒/初BURST780〜1020秒、CasualはFarmより遅い、AUTO Only1200〜1500秒、Immediate Prestige1200〜1500秒で初BURSTを検証する。4モデルの12CycleとImmediate20Cycleで必要Stage/SOUL/恒久Lv/時間/開始終了Clear Time、深部逆成長も記録する。最低時間を待たず条件達成でPrestigeできること。シミュレーションの全フレーム完全一致は要求せず、式単体は厳密値、体験時間は許容帯で確認する。
 
 性能テストはelapsed5秒を固定して128/1e6/1e12CLEARの設定を比較。演算/イベント件数が周回数に依存しないことを計測し、一定Stageは区間あたり定数、Stage跨ぎは最大33比較×2ブロック×5系列、AUTO区間最大6に収まること。Stage Goldを含めて検証する。ベンチマークの絶対時間はCI機種依存なので合否を倍率/件数中心にし、実機スマホで5秒精算10ms以内・Save書込で目立つ停止なしを目標にする。
 
@@ -214,4 +214,4 @@ formatTimeはBigのままs/ms/μs/ns/ps表示。presentation LODは独立設定�
 
 ## Issue #11補足
 
-固定待ちはBigの指数2項を分母へ合算する .85^TEMPO / (.94^(-ATK)+.60^(-Route)−1)。全Lv0で1秒。区間内の一定B項のままなのでStage積分/二分探索/batchに変更は不要。Saveはprototype-2とspeed-3の旧経路密度を識別して新5/1へ一度だけ写像。Quick Buyの候補は従来優先順・固定最大4件の探索。攻撃/CLEAR単位のUI処理は追加しない。[BURST_15_DESIGN](BURST_15_DESIGN.md)を参照。
+固定待ちはBigの指数2項を分母へ合算する .85^TEMPO / (.94^(-ATK)+.60^(-Route)−1)。全Lv0で1秒。MASTERYもBigの.88^max(0,p−2)を初期倍率へ乗算し、Numberアンダーフローを避ける。全時間積分へ同じ倍率を適用するためStage積分/二分探索/batchの構造変更は不要。Saveは現行Balanceのみ受理し、変換はしない。Quick Buyの候補は従来優先順・固定最大4件の探索。攻撃/CLEAR単位のUI処理は追加しない。[BURST_15_DESIGN](BURST_15_DESIGN.md)を参照。

@@ -17,6 +17,7 @@ test("Quick Buy keeps two cards and numeric HUD visible with all details in the 
   expect((await panel.boundingBox())?.height).toBeLessThanOrEqual(200);
   const raw = JSON.parse(fixture("prestige"));
   raw.meta.prestigeCount = 2;
+  raw.meta.unlocks.burst = false;
   raw.run.upgrades = { atk: 50, speed: 2, crit: 2, overkill: 1, delay: 8 };
   raw.run.gold = "1e8";
   raw.automation.atkEnabled = false;
@@ -67,6 +68,22 @@ test("Quick Buy keeps two cards and numeric HUD visible with all details in the 
     animations: "disabled",
   });
   await page.getByRole("button", { name: "閉じる", exact: true }).click();
+  await page.getByRole("button", { name: /Prestige ·/ }).click();
+  await expect(
+    page.getByText("今のCycleでさらに圧縮するとBURSTを目指せます。", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(page.locator(".milestones")).toContainText("12%短縮");
+  await expect(page.locator(".milestones")).toContainText(
+    "次Prestigeの累積倍率 ×0.3168",
+  );
+  await page.screenshot({
+    path: info.outputPath("prestige-mastery.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.getByRole("button", { name: "閉じる", exact: true }).click();
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(page.locator(".hero-art")).toHaveCSS("animation-name", "none");
   expect(
@@ -77,48 +94,78 @@ test("Quick Buy keeps two cards and numeric HUD visible with all details in the 
   expect(errors).toEqual([]);
 });
 
-test("published Saves retain target CLEAR and resources on reload without a wipe", async ({
+test("current balance Save reload and Export / Import preserve progress", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    const text = localStorage.getItem("test.legacy-next");
-    if (text) {
-      // Seed after the old document's pagehide Save, before the new app loads.
-      localStorage.setItem("loop-breaker.current", text);
-      localStorage.removeItem("test.legacy-next");
-    }
-  });
   await page.clock.install();
   await page.clock.pauseAt(new Date(Date.now() + 60000));
   await page.goto("./");
-  for (const version of ["prototype-2", "speed-3"]) {
-    const raw = JSON.parse(fixture("prestige"));
-    raw.balanceVersion = version;
-    raw.run.routeClears = version === "prototype-2" ? 239 : 3961;
-    raw.run.clears = "239";
-    raw.stats.totalClears = "239";
-    raw.automation.atkEnabled = false;
-    await page.evaluate(
-      (text) => localStorage.setItem("test.legacy-next", text),
-      JSON.stringify(raw),
-    );
-    await page.reload();
-    await expect(page.getByTestId("stage")).toHaveText("100");
-    await expect(page.getByTestId("gold")).toHaveText("100");
-    await page.getByRole("button", { name: "設定・Save" }).click();
-    const download = page.waitForEvent("download");
-    await page
-      .getByRole("button", { name: "SaveをExport", exact: true })
-      .click();
-    const path = await (await download).path();
-    if (!path) throw new Error("Export missing");
-    const save = JSON.parse(readFileSync(path, "utf8"));
-    expect(save.balanceVersion).toBe("speed-4");
-    expect(save.saveVersion).toBe(1);
-    expect(save.run.routeClears).toBe(496);
-    expect(Number(save.run.clears)).toBe(239);
-    expect(save.run.upgrades).toEqual(raw.run.upgrades);
-    expect(save.meta).toEqual(raw.meta);
-    await page.getByRole("button", { name: "閉じる", exact: true }).click();
-  }
+  const raw = JSON.parse(fixture("prestige"));
+  raw.automation.atkEnabled = false;
+  await page.getByRole("button", { name: "設定・Save" }).click();
+  await page.getByLabel("Save JSON", { exact: true }).fill(JSON.stringify(raw));
+  await page.getByRole("button", { name: "Importを確認", exact: true }).click();
+  await page
+    .getByRole("button", { name: "このSaveをImport", exact: true })
+    .click();
+  await page.reload();
+  await expect(page.getByTestId("stage")).toHaveText("100");
+  await expect(page.getByTestId("gold")).toHaveText("100");
+  await page.getByRole("button", { name: "設定・Save" }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "SaveをExport", exact: true }).click();
+  const path = await (await download).path();
+  if (!path) throw new Error("Export missing");
+  const save = JSON.parse(readFileSync(path, "utf8"));
+  expect(save.balanceVersion).toBe("speed-4");
+  expect(save.saveVersion).toBe(1);
+  expect(save.run.routeClears).toBe(496);
+  expect(Number(save.run.clears)).toBe(496);
+  expect(save.run.upgrades).toEqual(raw.run.upgrades);
+  expect(save.meta).toEqual(raw.meta);
+  await page
+    .getByLabel("Save JSON", { exact: true })
+    .fill(JSON.stringify(save));
+  await page.getByRole("button", { name: "Importを確認", exact: true }).click();
+  await page
+    .getByRole("button", { name: "このSaveをImport", exact: true })
+    .click();
+  await expect(page.getByTestId("stage")).toHaveText("100");
+});
+
+test("unsupported balance is not overwritten and can be explicitly replaced with a new game", async ({
+  page,
+}) => {
+  const raw = JSON.parse(fixture());
+  raw.balanceVersion = "development-old";
+  const text = JSON.stringify(raw);
+  await page.addInitScript((value) => {
+    if (!localStorage.getItem("test.seeded")) {
+      localStorage.setItem("loop-breaker.current", value);
+      localStorage.setItem("test.seeded", "1");
+    }
+  }, text);
+  await page.goto("./");
+  await expect(
+    page.getByText("開発版の仕様変更により旧Saveは利用できません。", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await page.reload();
+  expect(
+    await page.evaluate(() => localStorage.getItem("loop-breaker.current")),
+  ).toBe(text);
+  await page.getByRole("button", { name: "設定・Save" }).click();
+  await page.getByRole("button", { name: "新規開始", exact: true }).click();
+  await page
+    .getByRole("button", { name: "現在の進行をResetして新規開始", exact: true })
+    .click();
+  await expect(page.getByTestId("stage")).toHaveText("1");
+  expect(
+    JSON.parse(
+      (await page.evaluate(() =>
+        localStorage.getItem("loop-breaker.current"),
+      )) ?? "{}",
+    ).balanceVersion,
+  ).toBe("speed-4");
 });

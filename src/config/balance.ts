@@ -16,6 +16,7 @@ export const BALANCE = {
   delay: { base: 1, compression: 0.6, tempo: 0.85, atk: 0.94 },
   gold: { base: 10, wealth: 0.55, stageStep: 0.0005, stageCap: 100 },
   mastery: [1, 0.55, 0.36] as const,
+  masteryContinuation: { after: 2, factor: 0.88 },
   caps: {
     delayFirst: 6,
     delayStep: 3,
@@ -104,11 +105,13 @@ export function validateBalance(config = BALANCE): void {
     config.caps.cadence,
     config.caps.delayFirst,
     config.caps.delayStep,
+    config.masteryContinuation.after,
   ])
     if (!Number.isSafeInteger(n) || n < 1) fail();
   for (const n of [
     config.delay.compression,
     config.delay.atk,
+    config.masteryContinuation.factor,
     config.delay.tempo,
     ...config.mastery,
   ])

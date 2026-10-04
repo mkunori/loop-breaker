@@ -1,19 +1,19 @@
-LOOP MASTERY milestones: Prestige #1 BREAK I (x0.55); #2 BREAK II (cumulative x0.36).
+LOOP MASTERY: #1 x0.55; #2 cumulative x0.36; every Prestige after #2 x0.88.
 | Prestige # | Required Stage | Cycle seconds | SOUL earned | P/W/T at start | SOUL carry | Start sec/run | End sec/run | First BURST in cycle |
 |---:|---:|---:|---:|---|---:|---:|---:|---|
 | 1 | 100 | 365.84 | 4 | 0/0/0 | 0 | 5.0000 | 0.2820 | no |
 | 2 | 100 | 117.04 | 8 | 1/1/1 | 0 | 1.7616 | 0.0876 | no |
 | 3 | 100 | 600.00 | 4 | 2/2/2 | 0 | 0.8601 | 0.0009 | 600.00s / Stage 100 |
 First lifetime BURST: total active seconds 1082.87
-| 4 | 150 | 60.81 | 7 | 3/2/2 | 1 | 0.7246 | 0.0324 | no |
-| 5 | 200 | 61.56 | 11 | 3/3/2 | 5 | 0.7246 | 0.0271 | no |
-| 6 | 250 | 54.59 | 15 | 4/4/3 | 0 | 0.6000 | 0.0360 | no |
-| 7 | 300 | 59.64 | 20 | 4/4/4 | 5 | 0.5669 | 0.0570 | no |
-| 8 | 350 | 61.31 | 26 | 5/5/4 | 7 | 0.5079 | 0.0195 | no |
-| 9 | 400 | 64.16 | 32 | 6/5/5 | 1 | 0.4367 | 0.0243 | no |
-| 10 | 450 | 68.64 | 38 | 6/6/5 | 18 | 0.4367 | 0.0379 | no |
-| 11 | 500 | 76.24 | 44 | 7/6/6 | 2 | 0.3798 | 0.0606 | no |
-| 12 | 550 | 87.85 | 51 | 7/7/6 | 21 | 0.3798 | 0.0946 | no |
+| 4 | 150 | 54.08 | 7 | 3/2/2 | 1 | 0.6377 | 0.0345 | no |
+| 5 | 200 | 48.62 | 11 | 3/3/2 | 5 | 0.5611 | 0.0299 | no |
+| 6 | 250 | 37.94 | 15 | 4/4/3 | 0 | 0.4089 | 0.0245 | no |
+| 7 | 300 | 36.72 | 20 | 4/4/4 | 5 | 0.3399 | 0.0342 | no |
+| 8 | 350 | 35.61 | 26 | 5/5/4 | 7 | 0.2680 | 0.0437 | no |
+| 9 | 400 | 40.86 | 32 | 6/5/5 | 1 | 0.2028 | 0.0789 | no |
+| 10 | 450 | 56.04 | 38 | 6/6/5 | 18 | 0.1785 | 0.1494 | no |
+| 11 | 500 | 65.58 | 44 | 7/6/6 | 2 | 0.1366 | 0.0539 | no |
+| 12 | 550 | 65.93 | 51 | 7/7/6 | 21 | 0.1202 | 0.0346 | no |
 First-cycle checkpoints: [(0.0, 1, 0, {'atk': 0, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, 0.0, 5.0), (60, 3, 13, {'atk': 3, 'speed': 1, 'crit': 0, 'overkill': 0, 'delay': 0}, 1.9509999999999863, 2.8888971739718725), (120, 8, 39, {'atk': 7, 'speed': 1, 'crit': 1, 'overkill': 0, 'delay': 0}, 17.549589506559848, 1.605312165540012), (180, 18, 87, {'atk': 11, 'speed': 1, 'crit': 1, 'overkill': 1, 'delay': 0}, 120.6595852742245, 0.9750946164051324), (240, 34, 169, {'atk': 16, 'speed': 1, 'crit': 1, 'overkill': 1, 'delay': 0}, 177.4951853093662, 0.6020249076177648), (300, 60, 295, {'atk': 21, 'speed': 1, 'crit': 1, 'overkill': 1, 'delay': 0}, 103.31925619685123, 0.3882708180680824), (360, 96, 475, {'atk': 25, 'speed': 1, 'crit': 1, 'overkill': 1, 'delay': 0}, 164.93954806254376, 0.2814991745058246)]
 First purchase: 20.0
 First-cycle unlocks: {'speed': 28.78344827586207, 'crit': 76.73745948393423, 'overkill': 120.1924160710724, 'delay': 161.2687126258828, 'auto': 207.20448887590723}
@@ -21,4 +21,4 @@ First <1s: Cycle 1, cycle 180.00s, lifetime 180.00s, Stage 18
 First <0.1s: Cycle 2, cycle 111.00s, lifetime 476.84s, Stage 87
 First <0.01s: Cycle 3, cycle 135.00s, lifetime 617.87s, Stage 100
 First <0.001s: Cycle 3, cycle 600.00s, lifetime 1082.87s, Stage 100
-Normal levels at each finish: [{'atk': 25, 'speed': 1, 'crit': 1, 'overkill': 1, 'delay': 0}, {'atk': 29, 'speed': 2, 'crit': 1, 'overkill': 1, 'delay': 0}, {'atk': 84, 'speed': 2, 'crit': 2, 'overkill': 1, 'delay': 9}, {'atk': 34, 'speed': 3, 'crit': 2, 'overkill': 2, 'delay': 1}, {'atk': 39, 'speed': 3, 'crit': 3, 'overkill': 2, 'delay': 0}, {'atk': 43, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 45, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 47, 'speed': 5, 'crit': 4, 'overkill': 4, 'delay': 1}, {'atk': 49, 'speed': 5, 'crit': 5, 'overkill': 4, 'delay': 0}, {'atk': 50, 'speed': 6, 'crit': 5, 'overkill': 5, 'delay': 2}, {'atk': 52, 'speed': 6, 'crit': 6, 'overkill': 5, 'delay': 0}, {'atk': 54, 'speed': 7, 'crit': 6, 'overkill': 6, 'delay': 1}]
+Normal levels at each finish: [{'atk': 25, 'speed': 1, 'crit': 1, 'overkill': 1, 'delay': 0}, {'atk': 29, 'speed': 2, 'crit': 1, 'overkill': 1, 'delay': 0}, {'atk': 84, 'speed': 2, 'crit': 2, 'overkill': 1, 'delay': 9}, {'atk': 35, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 39, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 43, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 45, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 48, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 49, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 51, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 52, 'speed': 5, 'crit': 3, 'overkill': 1, 'delay': 0}, {'atk': 53, 'speed': 7, 'crit': 6, 'overkill': 6, 'delay': 1}]

@@ -51,7 +51,7 @@ describe("balance math", () => {
     almost(before.sub(math.clearTime(s)), 0.141);
     s.meta.prestigeCount = 2;
     almost(math.clearTime(s), before.sub(0.141).mul(0.36).toNumber());
-    expect(math.mastery(20)).toBe(0.36);
+    almost(math.mastery(20), 0.36 * 0.88 ** 18);
   });
   it("defines caps and stage boundaries precisely", () => {
     expect(
@@ -237,7 +237,7 @@ describe("advance and commands", () => {
     const next = command(s, { type: "prestige", expectedCount: 0 }).state;
     expect(next.meta.soul.toNumber()).toBe(4);
     expect(next.meta.prestigeCount).toBe(1);
-    expect(math.mastery(next.meta.prestigeCount)).toBe(0.55);
+    expect(math.mastery(next.meta.prestigeCount).eq(0.55)).toBe(true);
     expect(next.run.routeClears).toBe(0);
     expect(next.run.gold.eq(0)).toBe(true);
     expect(next.run.phase).toBe(0);
@@ -370,8 +370,8 @@ describe("reference player through twelve cycles", () => {
     const result = playModel("active");
     console.log("Active progression:", result);
     const reference = [
-      354.03, 102.03, 477, 51.89, 52.87, 46.21, 45.07, 45.27, 45.08, 47.91, 54,
-      66.09,
+      354.03, 102.03, 477.0, 45.91, 41.41, 31.89, 27.85, 25.16, 22.61, 22.9,
+      23.15, 25.16,
     ];
     result.times.forEach((t, i) => {
       expect(Math.abs(t - reference[i])).toBeLessThan(4);

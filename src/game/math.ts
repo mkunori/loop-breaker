@@ -16,7 +16,12 @@ export const stageAt = (s: GameState): number =>
   );
 export const requiredStage = (p: number): number =>
   BALANCE.stage.firstTarget + BALANCE.stage.step * Math.max(0, p - 2);
-export const mastery = (p: number): number => BALANCE.mastery[Math.min(2, p)];
+export const mastery = (p: number): Big =>
+  D(BALANCE.mastery[Math.min(2, p)]).mul(
+    D(BALANCE.masteryContinuation.factor).pow(
+      Math.max(0, p - BALANCE.masteryContinuation.after),
+    ),
+  );
 export function cap(id: UpgradeId, p: number): number {
   if (id === "atk") return BALANCE.limits.level;
   if (id === "delay")

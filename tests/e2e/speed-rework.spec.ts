@@ -42,7 +42,7 @@ test("visual LOD and Reduced Motion follow time units without attack events", as
   });
   const normalNodes = await scene.locator("*").count();
   for (const [atk, delay, lod, unit] of [
-    [20, 1, "fast", "ms"],
+    [17, 1, "fast", "ms"],
     [50, 6, "ultra", "ms"],
     [80, 14, "burst", "μs"],
   ] as const) {

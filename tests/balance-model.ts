@@ -8,7 +8,10 @@ import {
 } from "../src/game/math";
 import { initialState } from "../src/game/state";
 
-export function playModel(model: "active" | "casual" | "auto", cycles = 12) {
+export function playModel(
+  model: "active" | "immediate" | "casual" | "auto",
+  cycles = 12,
+) {
   let s = initialState();
   let total = 0;
   let burst: number | null = null;
@@ -19,7 +22,8 @@ export function playModel(model: "active" | "casual" | "auto", cycles = 12) {
   for (let cycle = 0; cycle < cycles; cycle++) {
     let seconds = 0;
     while (
-      (!canPrestige(s) || (cycle === 2 && burst === null)) &&
+      (!canPrestige(s) ||
+        (cycle === 2 && model !== "immediate" && burst === null)) &&
       seconds < 7200
     ) {
       // AUTO uses the production second-boundary purchase. Manual purchases
@@ -30,7 +34,11 @@ export function playModel(model: "active" | "casual" | "auto", cycles = 12) {
       seconds++;
       total++;
       if (!autoAt && s.meta.unlocks.autoAtk) autoAt = total;
-      if (model === "active" || (model === "casual" && seconds % 60 === 0))
+      if (
+        model === "active" ||
+        model === "immediate" ||
+        (model === "casual" && seconds % 60 === 0)
+      )
         for (const id of ["speed", "crit", "overkill", "delay"] as const)
           s = command(s, { type: "buy", id, max: true }).state;
       if (model !== "auto" || !s.meta.unlocks.autoAtk)

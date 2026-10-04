@@ -20,7 +20,7 @@ test("Pages base path loads metadata, assets, battle and persistent Save", async
   await expect(page).toHaveTitle("LOOP BREAKER");
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     "content",
-    /30秒のRUN/,
+    /5秒のRUN/,
   );
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(
     "content",
@@ -68,11 +68,11 @@ test("Pages base path loads metadata, assets, battle and persistent Save", async
     expect(resource.status(), url.href).toBe(200);
     expect(resource.headers()["content-type"]).not.toContain("text/html");
   }
-  await page.clock.runFor(31000);
+  await page.clock.runFor(6000);
   await expect(page.getByTestId("clears")).toHaveText("1");
   await expect(page.getByTestId("gold")).toHaveText("10");
-  // The existing first ATK costs 25 Gold; earn three RUNs without changing balance.
-  await page.clock.runFor(62000);
+  // The existing first ATK costs 100 Gold; earn enough RUNs without changing balance.
+  await page.clock.runFor(50000);
   const savedClears = await page.getByTestId("clears").innerText();
   await page.getByTestId("buy-atk").click();
   await expect(page.getByTestId("buy-atk")).toContainText("Lv 1");

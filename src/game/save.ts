@@ -112,14 +112,41 @@ export function decode(text: string): GameState {
   );
   s.run.gold = big(r.gold);
   s.run.clears = big(r.clears);
+  if (root.balanceVersion === "prototype-2") {
+    const oldBoundary = (stage: number) => Math.ceil((12 * (stage - 1)) / 5);
+    const route = numeric(
+      r.routeClears,
+      0,
+      oldBoundary(s.run.targetStage) + 1,
+      true,
+    );
+    const oldStage = Math.min(
+      s.run.targetStage,
+      1 + Math.floor((route * 5) / 12),
+    );
+    const oldHighest =
+      route === 0
+        ? 0
+        : Math.min(s.run.targetStage, 1 + Math.floor(((route - 1) * 5) / 12));
+    if (s.run.clears.lt(route) || r.highestClearedStage !== oldHighest)
+      throw new Error("旧Saveの経路進行が不正です");
+    // Preserve Stage and intra-Stage route position, never award imaginary CLEAR/Gold.
+    r.routeClears =
+      route > oldBoundary(s.run.targetStage)
+        ? boundary(s.run.targetStage) + 1
+        : boundary(oldStage) +
+          Math.floor(
+            ((route - oldBoundary(oldStage)) *
+              (boundary(oldStage + 1) - boundary(oldStage))) /
+              (oldBoundary(oldStage + 1) - oldBoundary(oldStage)),
+          );
+  }
   s.run.routeClears = numeric(
     r.routeClears,
     0,
     boundary(s.run.targetStage) + 1,
     true,
   );
-  if (s.run.clears.lt(s.run.routeClears))
-    throw new Error("経路進行が総CLEARを超えています");
   s.run.phase = numeric(r.phase, 0, 1 - Number.EPSILON);
   s.run.activeSeconds = numeric(r.activeSeconds, 0, Number.MAX_SAFE_INTEGER);
   s.run.highestClearedStage = numeric(

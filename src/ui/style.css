@@ -323,7 +323,7 @@ progress::-moz-progress-bar {
 }
 .arena-metrics {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
   gap: 12px;
   margin-top: 12px;
   padding: 6px 0 0;
@@ -341,6 +341,15 @@ progress::-moz-progress-bar {
 }
 .arena-metrics strong {
   font-size: 25px;
+}
+.arena-metrics strong[data-testid="clear-time"] {
+  display: block;
+  white-space: nowrap;
+  font-size: clamp(16px, 5vw, 25px);
+}
+.arena-metrics strong[data-testid="clear-time"] small {
+  display: block;
+  margin-left: 0;
 }
 .arena-metrics small {
   font-size: 10px;
@@ -844,5 +853,128 @@ fieldset small {
   }
   .sheet {
     max-height: 86dvh;
+  }
+}
+
+/* Fixed presentation LOD; never schedules game attacks or CLEAR events. */
+.slash-effect {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  left: 25%;
+  top: 35%;
+  width: 58%;
+  height: 35%;
+  border-radius: 50%;
+  border-top: 6px solid #dfffff;
+  box-shadow: 0 -7px 10px #7cebe588;
+  transform: rotate(-25deg);
+  opacity: 0;
+}
+.speed-trails {
+  position: absolute;
+  inset: 25% 5%;
+  pointer-events: none;
+  opacity: 0;
+  background: repeating-linear-gradient(
+    -12deg,
+    transparent 0 18px,
+    #7cebe566 19px 21px,
+    transparent 22px 38px
+  );
+}
+.battle-scene[data-lod="normal"] .slash-effect,
+.battle-scene[data-lod="fast"] .slash-effect {
+  animation: slash-sweep var(--attack-period) ease-out infinite;
+}
+.battle-scene[data-lod="normal"] .hero-art,
+.battle-scene[data-lod="fast"] .hero-art {
+  animation: hero-step var(--attack-period) ease-out infinite;
+}
+.battle-scene[data-lod="normal"] .enemy-art,
+.battle-scene[data-lod="fast"] .enemy-art {
+  animation: enemy-impact var(--attack-period) ease-out infinite;
+}
+.battle-scene[data-lod="ultra"] .slash-effect {
+  opacity: 0.65;
+  transform: rotate(-20deg);
+  filter: drop-shadow(0 0 8px #7cebe5);
+}
+.battle-scene[data-lod="ultra"] .speed-trails {
+  opacity: 0.55;
+  animation: trail-flow 0.5s linear infinite;
+}
+.battle-scene[data-lod="ultra"] .hero-art,
+.battle-scene[data-lod="ultra"] .enemy-art {
+  animation: none;
+}
+.battle-scene .versus::after {
+  animation: none;
+}
+@keyframes slash-sweep {
+  0%,
+  35%,
+  100% {
+    opacity: 0;
+    transform: translateX(-25%) rotate(-35deg) scale(0.6);
+  }
+  45% {
+    opacity: 0.9;
+  }
+  65% {
+    opacity: 0;
+    transform: translateX(12%) rotate(10deg) scale(1.1);
+  }
+}
+@keyframes hero-step {
+  0%,
+  35%,
+  75%,
+  100% {
+    transform: translateX(0);
+  }
+  45%,
+  55% {
+    transform: translateX(9px);
+  }
+}
+@keyframes enemy-impact {
+  0%,
+  42%,
+  80%,
+  100% {
+    transform: translateX(0);
+    filter: none;
+  }
+  48% {
+    transform: translateX(7px);
+    filter: brightness(2.2) drop-shadow(0 0 5px #7cebe5);
+  }
+  62% {
+    transform: translateX(3px);
+    filter: none;
+  }
+}
+@keyframes trail-flow {
+  to {
+    background-position: 60px 0;
+  }
+}
+.app[data-reduced-motion="true"] .battle-scene[data-lod] * {
+  animation: none;
+  transition: none;
+}
+.app[data-reduced-motion="true"] .slash-effect {
+  opacity: 0.35;
+  transform: rotate(-20deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .app .battle-scene[data-lod] * {
+    animation: none;
+    transition: none;
+  }
+  .app .slash-effect {
+    opacity: 0.35;
+    transform: rotate(-20deg);
   }
 }

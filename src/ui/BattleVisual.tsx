@@ -1,7 +1,10 @@
+import type { CSSProperties } from "react";
+import { COMBAT_VISUAL } from "../config/combatVisual";
 import { VISUAL, visualForStage } from "../config/visual";
 import { AssetImage } from "./AssetImage";
 
 export function BattleVisual({
+  lod,
   stage,
   enemyIndex,
   damage,
@@ -10,6 +13,7 @@ export function BattleVisual({
   clears,
   gold,
 }: {
+  lod: "normal" | "fast" | "ultra" | "burst";
   stage: number;
   enemyIndex: number;
   damage: string;
@@ -24,6 +28,15 @@ export function BattleVisual({
     <div
       className={`battle-scene ${burst ? "compressed" : ""}`}
       data-zone={zone.id}
+      data-lod={lod}
+      style={
+        {
+          "--attack-period":
+            lod === "fast"
+              ? COMBAT_VISUAL.fastPeriod
+              : COMBAT_VISUAL.normalPeriod,
+        } as CSSProperties
+      }
       data-testid="battle-scene"
     >
       <AssetImage
@@ -45,6 +58,8 @@ export function BattleVisual({
         </div>
       ) : (
         <div className="fighters">
+          <span className="slash-effect" aria-hidden="true" />
+          <span className="speed-trails" aria-hidden="true" />
           <div className="actor hero-actor">
             <AssetImage
               src={VISUAL.hero}

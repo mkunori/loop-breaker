@@ -1,6 +1,6 @@
 # LOOP BREAKER
 
-30秒のRUNを強化・Prestige・BURSTで限界まで圧縮するインクリメンタルRPG。
+5秒のRUNを強化・Prestige・BURSTで限界まで圧縮するインクリメンタルRPG。
 
 **[Play LOOP BREAKER](https://mkunori.github.io/loop-breaker/)**
 

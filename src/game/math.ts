@@ -19,6 +19,11 @@ export const requiredStage = (p: number): number =>
 export const mastery = (p: number): number => BALANCE.mastery[Math.min(2, p)];
 export function cap(id: UpgradeId, p: number): number {
   if (id === "atk") return BALANCE.limits.level;
+  if (id === "delay")
+    return Math.min(
+      BALANCE.caps.delay,
+      BALANCE.caps.delayFirst + BALANCE.caps.delayStep * p,
+    );
   if (id === "speed")
     return Math.min(
       BALANCE.caps.speed,

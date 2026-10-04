@@ -2,7 +2,7 @@
 
 30秒のRUNを強化・Prestige・BURSTで限界まで圧縮するインクリメンタルRPG。
 
-**[Play LOOP BREAKER](https://mkunori.github.io/loop-breaker/)** — 初回公開はdeployment PRのmergeとCI成功後です。
+**[Play LOOP BREAKER](https://mkunori.github.io/loop-breaker/)**
 
 <img src="docs/review/issue-5/normal-360.webp" alt="LOOP BREAKERの通常戦闘とUpgrade画面" width="360" />
 

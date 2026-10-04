@@ -323,7 +323,7 @@ progress::-moz-progress-bar {
 }
 .arena-metrics {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
   gap: 12px;
   margin-top: 12px;
   padding: 6px 0 0;
@@ -341,6 +341,15 @@ progress::-moz-progress-bar {
 }
 .arena-metrics strong {
   font-size: 25px;
+}
+.arena-metrics strong[data-testid="clear-time"] {
+  display: block;
+  white-space: nowrap;
+  font-size: clamp(16px, 5vw, 25px);
+}
+.arena-metrics strong[data-testid="clear-time"] small {
+  display: block;
+  margin-left: 0;
 }
 .arena-metrics small {
   font-size: 10px;

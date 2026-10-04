@@ -43,3 +43,5 @@ unit / integration 70件、E2E 56件、lint / typecheck / production build / sim
 320 / 360 / 390pxとPC、Reduced Motion、横スクロールなし、pageerrorなしを確認。100万・1兆CLEARの比較で固定9 DOM・50〜51 React commit/5秒・ウォームアップ後の追加通信0。[レビュー画像](review/ISSUE_9_SPEED_REVIEW.md)を参照。
 
 残る確認は実機iOS Safari、購入方針による到達時刻差、深部Stage500〜550の長期テンポ。Cycle11/12は深部HPにより12:31 / 23:20へ伸びるが、今回SOUL指数や深部式は独自変更しない。
+
+CIのLinuxフォントではms数値と / RUNが折り返し、Stage帯切替時にArenaが伸びる問題を確認。Clear Time列を広げ、数値と単位を一行、/ RUNを固定の次行として高さを安定化した。ゲーム計算は変更しない。

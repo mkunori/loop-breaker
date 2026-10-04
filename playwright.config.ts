@@ -4,7 +4,8 @@ export default defineConfig({
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   use: {
-    baseURL: "http://127.0.0.1:4173/loop-breaker/",
+    baseURL:
+      process.env.PAGES_SMOKE_URL ?? "http://127.0.0.1:4173/loop-breaker/",
     trace: "retain-on-failure",
   },
   projects: [
@@ -17,13 +18,19 @@ export default defineConfig({
       use: { browserName: "chromium", viewport: { width: 360, height: 800 } },
     },
     {
+      name: "mobile-390",
+      use: { browserName: "chromium", viewport: { width: 390, height: 844 } },
+    },
+    {
       name: "desktop",
       use: { browserName: "chromium", viewport: { width: 1280, height: 900 } },
     },
   ],
-  webServer: {
-    command: "npm run preview -- --port 4173",
-    port: 4173,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: process.env.PAGES_SMOKE_URL
+    ? undefined
+    : {
+        command: "npm run preview -- --port 4173",
+        port: 4173,
+        reuseExistingServer: !process.env.CI,
+      },
 });

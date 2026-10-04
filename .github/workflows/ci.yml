@@ -25,6 +25,11 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      # Upload the exact tested build on PRs too; uploading is not deployment.
+      - name: Package tested Pages build
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
       - name: Attach browser failure evidence
         if: failure()
         uses: actions/upload-artifact@v7
@@ -32,3 +37,23 @@ jobs:
           name: browser-failures
           path: test-results/
           retention-days: 7
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+      - name: Deploy tested build
+        id: deployment
+        uses: actions/deploy-pages@v5

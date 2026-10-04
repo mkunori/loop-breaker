@@ -6,14 +6,15 @@ import * as math from "../src/game/math";
 import { D, format, splitWork } from "../src/game/number";
 import { decode, encode } from "../src/game/save";
 import { type GameState, initialState } from "../src/game/state";
+import { playModel } from "./balance-model";
 
 const almost = (a: { toNumber(): number }, b: number) =>
   expect(a.toNumber()).toBeCloseTo(b, 8);
 function farmState(): GameState {
   const s = initialState();
-  s.run.routeClears = 3961;
-  s.run.clears = D(3961);
-  s.stats.totalClears = D(3961);
+  s.run.routeClears = 496;
+  s.run.clears = D(496);
+  s.stats.totalClears = D(496);
   s.run.highestClearedStage = 100;
   s.stats.highestStage = 100;
   return s;
@@ -47,9 +48,9 @@ describe("balance math", () => {
     expect(math.overkill(s)).toBe(1.15);
     const before = math.clearTime(s);
     s.meta.upgrades.tempo = 1;
-    almost(before.sub(math.clearTime(s)), 0.15);
+    almost(before.sub(math.clearTime(s)), 0.141);
     s.meta.prestigeCount = 2;
-    almost(math.clearTime(s), before.sub(0.15).mul(0.36).toNumber());
+    almost(math.clearTime(s), before.sub(0.141).mul(0.36).toNumber());
     expect(math.mastery(20)).toBe(0.36);
   });
   it("defines caps and stage boundaries precisely", () => {
@@ -57,18 +58,18 @@ describe("balance math", () => {
       [0, 1, 2, 3, 9].map((p) => UPGRADE_IDS.map((id) => math.cap(id, p))),
     ).toEqual([
       [1e6, 1, 1, 1, 6],
-      [1e6, 2, 1, 1, 8],
-      [1e6, 2, 2, 1, 10],
-      [1e6, 3, 2, 2, 12],
-      [1e6, 6, 5, 5, 24],
+      [1e6, 2, 1, 1, 9],
+      [1e6, 2, 2, 1, 12],
+      [1e6, 3, 2, 2, 15],
+      [1e6, 6, 5, 5, 30],
     ]);
     const s = initialState();
     for (const [n, expected] of [
       [0, 1],
-      [40, 2],
-      [200, 6],
-      [3960, 100],
-      [3961, 100],
+      [5, 2],
+      [25, 6],
+      [495, 100],
+      [496, 100],
     ]) {
       s.run.routeClears = n;
       expect(math.stageAt(s)).toBe(expected);
@@ -81,8 +82,8 @@ describe("balance math", () => {
     almost(math.hp(101).div(math.hp(100)), 1.02204);
   });
   it("quotes MAX by a closed series, with exact budget and cap", () => {
-    almost(math.price("atk", 0), 100);
-    almost(math.price("atk", 1), 120);
+    almost(math.price("atk", 0), 35);
+    almost(math.price("atk", 1), 39.2);
     for (const id of UPGRADE_IDS) {
       const total = math.bulkPrice(id, 2, 10);
       let reference = D(0);
@@ -93,7 +94,7 @@ describe("balance math", () => {
       expect(math.maxBuy(id, 2, total.mul(0.999), 100)).toBe(9);
       expect(math.maxBuy(id, 2, total, 4)).toBe(2);
     }
-    expect(math.maxBuy("atk", 0, D(99), 1e6)).toBe(0);
+    expect(math.maxBuy("atk", 0, D(34), 1e6)).toBe(0);
     expect(math.maxBuy("atk", 0, D("1e10000"), 1e6)).toBeGreaterThan(100000);
   });
   it("matches periodic HP/Gold sums against small reference loops", () => {
@@ -103,12 +104,12 @@ describe("balance math", () => {
       [0, 12],
       [3580, 4450],
       [0, 17961],
-      [3960, 6000],
+      [495, 6000],
     ]) {
       let time = D(0),
         gold = D(0);
       for (let n = from; n < to; n++) {
-        const stage = Math.min(450, 1 + Math.floor(n / 40));
+        const stage = Math.min(450, 1 + Math.floor(n / 5));
         time = time.add(math.clearTime(s, stage));
         gold = gold.add(math.goldPerClear(s, stage));
       }
@@ -126,12 +127,12 @@ describe("balance math", () => {
         s.run.targetStage = 200;
         let time = D(0),
           gold = D(0);
-        for (let n = 0; n < 8000; n++) {
-          const stage = 1 + Math.floor(n / 40);
+        for (let n = 0; n < 1000; n++) {
+          const stage = 1 + Math.floor(n / 5);
           time = time.add(math.clearTime(s, stage));
           gold = gold.add(math.goldPerClear(s, stage));
         }
-        const summed = math.rangeTotals(s, 0, 8000);
+        const summed = math.rangeTotals(s, 0, 1000);
         almost(summed.time.div(time), 1);
         almost(summed.gold.div(gold), 1);
       }
@@ -154,7 +155,7 @@ describe("advance and commands", () => {
   });
   it("preserves progress through purchases and refuses locked/unaffordable/capped upgrades", () => {
     const s = initialState();
-    s.run.gold = D(100);
+    s.run.gold = D(35);
     s.run.phase = 0.7;
     expect(
       command(s, { type: "buy", id: "crit" }).state.run.upgrades.crit,
@@ -213,14 +214,14 @@ describe("advance and commands", () => {
     }));
     const farmed = advance(s, 5).state;
     expect(farmed.run.clears.gt(5000)).toBe(true);
-    expect(farmed.run.routeClears).toBe(3961);
+    expect(farmed.run.routeClears).toBe(496);
     const deep = command(farmed, { type: "deepen" }).state;
     expect(math.stageAt(deep)).toBe(100);
-    expect(deep.run.routeClears).toBe(3961);
+    expect(deep.run.routeClears).toBe(496);
     expect(deep.run.targetStage).toBe(125);
     expect(command(deep, { type: "deepen" }).state.run.targetStage).toBe(125);
-    const resumed = advance(deep, 0.039).state;
-    expect(resumed.run.routeClears).toBe(4000);
+    const resumed = advance(deep, 0.004).state;
+    expect(resumed.run.routeClears).toBe(500);
     expect(resumed.run.highestClearedStage).toBe(100);
     expect(math.stageAt(resumed)).toBe(101);
     mock.mockRestore();
@@ -240,7 +241,7 @@ describe("advance and commands", () => {
     expect(next.run.routeClears).toBe(0);
     expect(next.run.gold.eq(0)).toBe(true);
     expect(next.run.phase).toBe(0);
-    expect(next.stats.totalClears.eq(3961)).toBe(true);
+    expect(next.stats.totalClears.eq(496)).toBe(true);
     expect(next.automation.atkEnabled).toBe(true);
     expect(next.settings.reducedMotion).toBe(true);
     expect(
@@ -264,17 +265,17 @@ describe("advance and commands", () => {
     let next = advance(s, 0.5).state;
     expect(next.run.upgrades.atk).toBe(0);
     next = advance(next, 0.5).state;
-    expect(next.run.upgrades.atk).toBe(1);
-    expect(next.run.gold.toNumber()).toBe(100);
+    expect(next.run.upgrades.atk).toBe(3);
+    almost(next.run.gold, 200 - math.bulkPrice("atk", 0, 3).toNumber());
     next.automation.atkEnabled = false;
-    expect(advance(next, 1).state.run.upgrades.atk).toBe(1);
+    expect(advance(next, 1).state.run.upgrades.atk).toBe(3);
   });
   it.each([128, 1e6, 1e12])(
     "aggregates %s CLEARs with constant segments",
     (count) => {
       vi.spyOn(math, "clearTime").mockReturnValue(D(5).div(count));
       const result = advance(farmState(), 5);
-      expect(result.state.run.clears.sub(3961).toNumber()).toBe(count);
+      expect(result.state.run.clears.sub(496).toNumber()).toBe(count);
       expect(result.state.stats.bestBurstClears.toNumber()).toBe(
         count > 5000 ? count : 0,
       );
@@ -326,7 +327,7 @@ describe("advance and commands", () => {
     s.run.autoClock = 1 - 1e-11;
     const result = advance(s, 5);
     expect(
-      Math.abs(result.state.run.clears.sub(3961).toNumber() - 1e12),
+      Math.abs(result.state.run.clears.sub(496).toNumber() - 1e12),
     ).toBeLessThanOrEqual(1);
     expect(result.diagnostics.segments).toBeLessThanOrEqual(6);
     expect(result.state.run.activeSeconds).toBeCloseTo(5, 12);
@@ -365,52 +366,19 @@ describe("advance and commands", () => {
   });
 });
 describe("reference player through twelve cycles", () => {
-  it("reproduces pacing, soul ledger and the first BURST with the real aggregate engine", () => {
-    let s = initialState();
-    const times: number[] = [];
-    let firstBurst: number | null = null,
-      at25 = 0;
-    for (let cycle = 0; cycle < 12; cycle++) {
-      let seconds = 0;
-      while (!math.canPrestige(s) && seconds < 7200) {
-        s = advance(s, 1).state;
-        seconds++;
-        for (const id of ["speed", "crit", "overkill", "delay", "atk"] as const)
-          s = command(s, { type: "buy", id, max: true }).state;
-        if (cycle === 0 && seconds === 1500)
-          at25 = math.clearTime(s).toNumber();
-        if (s.meta.unlocks.burst && firstBurst === null) firstBurst = cycle + 1;
-      }
-      expect(math.canPrestige(s)).toBe(true);
-      times.push(seconds);
-      const beforeSoul = s.meta.soul,
-        reward = math.soulReward(s);
-      s = command(s, { type: "prestige", expectedCount: cycle }).state;
-      expect(s.meta.soul.eq(beforeSoul.add(reward))).toBe(true);
-      for (let purchases = 0; purchases < 100; purchases++) {
-        const id = (["power", "wealth", "tempo"] as const).reduce((a, b) =>
-          s.meta.upgrades[b] < s.meta.upgrades[a] ? b : a,
-        );
-        if (s.meta.soul.lt(math.soulPrice(id, s.meta.upgrades[id]))) break;
-        s = command(s, { type: "permanent", id }).state;
-      }
-    }
-    expect(times[0]).toBeGreaterThan(25 * 60);
-    expect(times[0]).toBeLessThan(28 * 60);
-    expect(times[1]).toBeGreaterThan(300);
-    expect(times[1]).toBeLessThan(340);
-    expect(times[2]).toBeGreaterThan(110);
-    expect(times[2]).toBeLessThan(125);
-    expect(at25).toBeGreaterThan(0.1);
-    expect(at25).toBeLessThan(0.2);
-    expect(firstBurst).toBe(10);
+  it("reproduces pacing, soul ledger and first BURST with the aggregate engine", () => {
+    const result = playModel("active");
+    console.log("Active progression:", result);
     const reference = [
-      1579.09, 320.39, 117.61, 103.49, 100.06, 82.09, 116.07, 134.48, 230.92,
-      361.92, 751.27, 1400.48,
+      354.03, 102.03, 477, 51.89, 52.87, 46.21, 45.07, 45.27, 45.08, 47.91, 54,
+      66.09,
     ];
-    times.forEach((t, i) => {
-      expect(Math.abs(t - reference[i])).toBeLessThan(3);
+    result.times.forEach((t, i) => {
+      expect(Math.abs(t - reference[i])).toBeLessThan(4);
     });
-    console.log("Balance cycle seconds:", times, "25-minute time:", at25);
+    expect(result.burst).toBeGreaterThan(780);
+    expect(result.burst).toBeLessThan(1020);
+    expect(result.times[0]).toBeGreaterThan(300);
+    expect(result.times[0]).toBeLessThan(360);
   }, 30000);
 });

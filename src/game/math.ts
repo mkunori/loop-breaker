@@ -62,7 +62,12 @@ export const hp = (stage: number): Big =>
     );
 export const fixedDelay = (s: GameState): Big =>
   D(BALANCE.delay.base)
-    .mul(D(BALANCE.delay.compression).pow(s.run.upgrades.delay))
+    .div(
+      D(BALANCE.delay.atk)
+        .pow(-s.run.upgrades.atk)
+        .add(D(BALANCE.delay.compression).pow(-s.run.upgrades.delay))
+        .sub(1),
+    )
     .mul(D(BALANCE.delay.tempo).pow(s.meta.upgrades.tempo));
 export const clearTime = (s: GameState, stage = stageAt(s)): Big =>
   hp(stage)

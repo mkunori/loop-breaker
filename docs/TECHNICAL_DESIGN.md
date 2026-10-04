@@ -1,4 +1,4 @@
-# LOOP BREAKER — 技術設計 v3（Issue #9）
+# LOOP BREAKER — 技術設計 v4（Issue #11）
 
 実装方針を定義する文書。[GAME_DESIGN](GAME_DESIGN.md) と [BALANCE_DESIGN](BALANCE_DESIGN.md) を仕様として使用する。Issue #3で初期実装を追加した。具体的な構成・検証結果・仕様補足は [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) を参照。
 
@@ -31,7 +31,7 @@ tests/                     # 純粋関数、Save fixture、統合、ブラウザ
 
 ## 2. 設定と状態
 
-balance.tsの1オブジェクトに以下を集中させる: HP内訳/初期成長1.002/Stage100超の追加成長1.020、攻撃/速度/Crit/Overkill/Delayの全係数、Gold/CLEARとStage倍率（増分.0005、上限+5%）、初期Damage60/固定待ち1秒/Route上限6+2p、5強化の価格とGrowth、Prestige回数別の上限解放式、解禁CLEAR、恒久価格と効果、LOOP MASTERYの回数/名称/累積倍率、SOUL式係数/指数1.5/2回目ボーナス、Stage境界の40/1、初期目標100/増分50、深化25、BURST閾値.001/復帰.0011/窓5秒、将来の周回率倍率（初期1）。balanceVersionはspeed-3。Prestige最低時間の設定は存在しない。UIから参照し、同じ数値を重複定義しない。
+balance.tsの1オブジェクトに以下を集中させる: HP内訳/初期成長1.002/Stage100超の追加成長1.020、攻撃/速度/Crit/Overkill/Delayの全係数、Gold/CLEARとStage倍率（増分.0005、上限+5%）、初期Damage60/固定待ち1秒/Route上限6+3p、5強化の価格とGrowth、Prestige回数別の上限解放式、解禁CLEAR、恒久価格と効果、LOOP MASTERYの回数/名称/累積倍率、SOUL式係数/指数1.5/2回目ボーナス、Stage境界の5/1、初期目標100/増分50、深化25、BURST閾値.001/復帰.0011/窓5秒、将来の周回率倍率（初期1）。balanceVersionはspeed-4。Prestige最低時間の設定は存在しない。UIから参照し、同じ数値を重複定義しない。
 
 presentation.tsにはUI通知100ms、AUTO判断1秒、Save5秒、演出LODはcombatVisual.tsで斬撃上限4/秒、説明用桁数。AUTO間隔は収入に影響するため変更時はバランス検証も行う。設定検証で負数、成長係数1以下の価格、Crit率100%超、ゼロClearTime、整合しない上限を拒否する。
 
@@ -79,7 +79,7 @@ Best BURSTは完全な5秒窓だけ。Total Goldは支出前の獲得量、Faste
 
 単に「5秒開始時のStageで全部計算」するとStage進行と報酬が不整合になる。初期から以下を採用する。capStageは現在目標（Required Stageまたは任意深化）、capに達した残時間は一定Stage式。HPとStage Goldの係数が変わるStage101を境に最大2ブロックへ分ける。
 
-境界 `b(s)=40(s−1)`。整数routeClears nのStageは `min(capStage, 1+floor(n/40))`。Stage sに属するCLEAR数は `q(s)=b(s+1)−b(s)`、周期1の `[40]`。capStageは残CLEAR全て同Stageとなる。現在の未完了周を処理した後、整数周境界から計算する。
+境界 `b(s)=5(s−1)`。整数routeClears nのStageは `min(capStage, 1+floor(n/5))`。Stage sに属するCLEAR数は `q(s)=b(s+1)−b(s)`、周期1の `[5]`。capStageは残CLEAR全て同Stageとなる。現在の未完了周を処理した後、整数周境界から計算する。
 
 未完了周の残時間よりelapsedが短ければphaseだけを進めて終了する。巨大総CLEARをStage算出のためnumberへ変換しない。経路カウンターは目標までの必要周だけを積分し、capでの大量周回はDecimalのまま集計する。
 
@@ -94,9 +94,9 @@ qは1周期なので、HP和を各ブロック最大1本の幾何級数に分け
 
 Goldも周回を列挙しない。G0=10×WEALTH、Stage<=100は倍率 `a+b×s`（a=.9995、b=.0005）、Stage>=101はa=1.05/b=0。各ブロックのGold和は `G0×[a×sum(q(s))+b×sum(q(s)×s)]`。周期の各群は `sum(q×s)=q(s0)×m×[2s0+(m−1)]/2` の等差数列で一括。終端の部分Stageとcapでの稼ぎは実際の周数×そのStage倍率で足す。Stage報酬の追加でも周回数比例処理を導入しない。
 
-elapsed以内に完了する最後のStageを単調二分探索（Stage450なら最大9比較、保護上限1e9でも最大30比較）し、最後のStageの追加最大40周はfloor、残時間をphaseに戻す。到達capでは残り数百万〜1e12周も一定式1回。highestClearedStageは最後に完了した周のStageを用い、Stageに入っただけでは更新しない。
+elapsed以内に完了する最後のStageを単調二分探索（Stage450なら最大9比較、保護上限1e9でも最大30比較）し、最後のStageの追加最大5周はfloor、残時間をphaseに戻す。到達capでは残り数百万〜1e12周も一定式1回。highestClearedStageは最後に完了した周のStageを用い、Stageに入っただけでは更新しない。
 
-初期実装では端Stageと完了周の境界を一つの探索にまとめ、必要な経路CLEAR境界を二分探索する。上限は約40×targetStageなので最大36比較（Stage450は最大15比較）。計算量は同じ対数で、目標到達後の大量CLEARには探索しない。HPの深層境界とGold上限を別々に変更できるよう、その境界の和集合で区間分割する。既定値は2ブロック、別の境界を設定した場合は最大3ブロックとなる。
+初期実装では端Stageと完了周の境界を一つの探索にまとめ、必要な経路CLEAR境界を二分探索する。上限は約5×targetStageなので最大33比較（Stage450は最大12比較）。計算量は同じ対数で、目標到達後の大量CLEARには探索しない。HPの深層境界とGold上限を別々に変更できるよう、その境界の和集合で区間分割する。既定値は2ブロック、別の境界を設定した場合は最大3ブロックとなる。
 
 これにより1区間の計算量は `O(2×1 log capStage)`、周回数に依存しない。Stage目標が増えても境界周期と式を保てば対数。新Stage特性を追加するなら特性が一定の区間に分け、区間数を小さく保つ。敵ごとの条件分岐を後から各周へ持ち込まない。
 
@@ -127,7 +127,7 @@ localStorageにJSONを保存。現在・前回正常Saveの2スロット、合�
 ```json
 {
   "saveVersion": 1,
-  "balanceVersion": "speed-3",
+  "balanceVersion": "speed-4",
   "savedAt": "2026-10-03T00:00:00.000Z",
   "run": {
     "stage": 1, "targetStage": 100,
@@ -166,7 +166,7 @@ Loadはcurrent検証→失敗ならbackup→両方失敗なら新規開始の選
 
 ## 8. Version / Migration
 
-saveVersionは構造変更、balanceVersionは式や価格変更。整数Save versionの純粋関数 `migrateV1ToV2` を順に適用し最後に全体検証する。Migrationにclockやネットワークを使わない。元payloadをバックアップ/Export可能にして、成功後だけ保存する。まだSaveを配布していない設計段階なので今回もschemaはv1、balanceVersionのみspeed-3とする。公開後にrouteClears等を追加する場合は構造migrationが必要。今は架空のv0 migrationを実装しない。
+saveVersionは構造変更、balanceVersionは式や価格変更。整数Save versionの純粋関数 `migrateV1ToV2` を順に適用し最後に全体検証する。Migrationにclockやネットワークを使わない。元payloadをバックアップ/Export可能にして、成功後だけ保存する。公開Saveのschemaはv1を維持し、balanceVersionのみspeed-4へ更新する。公開後にrouteClears等を追加する場合は構造migrationが必要。今は架空のv0 migrationを実装しない。
 
 追加フィールドは明示default、削除フィールドは破棄、ID変更はマッピング表を用意。新強化Lvは0、装備個体や履歴へ変換しない。balance変更ではGold/Lv/SOULを原則保持し派生値を再計算、phase比率を保持。Stageはrun.routeClears/targetから再計算し、保存stageとの差があれば表示用stageを修復する。経路進行は0〜b(target)+1、総CLEAR以下を検証する。上限縮小/通貨定義変更は個別の補償方針を書いてversionを上げ、勝手に切り捨てない。
 
@@ -193,7 +193,7 @@ saveVersionは構造変更、balanceVersionは式や価格変更。整数Save ve
 
 シナリオテストに参考購入ポリシーと実際のSOUL購入/繰越を入れ、初回Prestige26〜35分、25分時点T4〜6秒、2Cycle8〜12分、3Cycle4〜6分を検証する。4〜10Cycleの必要Stage/SOUL/恒久Lv/時間/初BURSTも設計用結果と比較し、12Cycleを深層の追加チェックにする。最低時間を待たず条件達成でPrestigeできること。シミュレーションの全フレーム完全一致は要求せず、式単体は厳密値、体験時間は許容帯で確認する。
 
-性能テストはelapsed5秒を固定して128/1e6/1e12CLEARの設定を比較。演算/イベント件数が周回数に依存しないことを計測し、一定Stageは区間あたり定数、Stage跨ぎは最大36比較×2ブロック×5系列、AUTO区間最大6に収まること。Stage Goldを含めて検証する。ベンチマークの絶対時間はCI機種依存なので合否を倍率/件数中心にし、実機スマホで5秒精算10ms以内・Save書込で目立つ停止なしを目標にする。
+性能テストはelapsed5秒を固定して128/1e6/1e12CLEARの設定を比較。演算/イベント件数が周回数に依存しないことを計測し、一定Stageは区間あたり定数、Stage跨ぎは最大33比較×2ブロック×5系列、AUTO区間最大6に収まること。Stage Goldを含めて検証する。ベンチマークの絶対時間はCI機種依存なので合否を倍率/件数中心にし、実機スマホで5秒精算10ms以内・Save書込で目立つ停止なしを目標にする。
 
 ブラウザ受入は360×800/320px/PC、購入・シート・Save復帰・Import・背景停止。最小限のChromium E2Eに加え、モバイルSafariは実機でvisibility/localStorage/片手到達範囲を確認する。画面からDebug時間加速を使わず、純粋エンジンへテスト時計を注入する。
 
@@ -210,4 +210,8 @@ saveVersionは構造変更、balanceVersionは式や価格変更。整数Save ve
 
 ## Issue #9の現在値と互換性
 
-旧数値列挙よりBALANCE_DESIGN v3とbalance.tsを優先。初期Damage60・待ち1秒・Stage40/1・Route上限6+2p。Save Version1維持、prototype-2を旧境界で検証後にStage内進捗を新密度へ一度だけ写像し、実CLEAR/Gold/SOUL/Lv/phase/統計は増減しない。経路位置が実CLEARを超える場合も整数範囲とhighest整合を検証。formatTimeはBigのままs/ms/μs/ns/ps表示。presentation LODは独立設定、React commit既存10Hz・固定DOM・attackごとの通信なし。詳細は[SPEED_REWORK](SPEED_REWORK.md)。
+formatTimeはBigのままs/ms/μs/ns/ps表示。presentation LODは独立設定、React commit既存10Hz・固定DOM・attackごとの通信なし。Issue #9の過去比較は[SPEED_REWORK](SPEED_REWORK.md)。
+
+## Issue #11補足
+
+固定待ちはBigの指数2項を分母へ合算する .85^TEMPO / (.94^(-ATK)+.60^(-Route)−1)。全Lv0で1秒。区間内の一定B項のままなのでStage積分/二分探索/batchに変更は不要。Saveはprototype-2とspeed-3の旧経路密度を識別して新5/1へ一度だけ写像。Quick Buyの候補は従来優先順・固定最大4件の探索。攻撃/CLEAR単位のUI処理は追加しない。[BURST_15_DESIGN](BURST_15_DESIGN.md)を参照。

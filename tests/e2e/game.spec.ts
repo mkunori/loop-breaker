@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+﻿import { expect, type Page, test } from "@playwright/test";
 import { fixture } from "../fixtures";
 
 const pageErrors = new WeakMap<Page, Error[]>();
@@ -58,9 +58,9 @@ test("supports purchases, all upgrades, mobile fit and Save export/import", asyn
   await page.getByTestId("buy-atk").click();
   await expect(page.getByTestId("buy-atk")).toContainText("Lv 1");
   await page.getByRole("button", { name: "UPGRADES" }).click();
-  await expect(page.getByTestId("buy-speed")).toContainText("20 CLEARで解禁");
+  await expect(page.getByTestId("buy-speed")).toContainText("6 CLEARで解禁");
   await page.getByRole("button", { name: "閉じる", exact: true }).click();
-  await expect(page.getByTestId("clear-time")).toContainText("4.45");
+  await expect(page.getByTestId("clear-time")).toContainText("4.39");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -119,10 +119,10 @@ test("BURST displays aggregate results, survives reload and exits at deeper stag
   await expect(page.getByText("BURST MODE", { exact: true })).toBeVisible();
   const raw = JSON.parse(fixture("burst"));
   raw.run.targetStage = 550;
-  raw.run.routeClears = 21960;
-  raw.run.clears = "21960";
+  raw.run.routeClears = 2745;
+  raw.run.clears = "2745";
   raw.run.highestClearedStage = 549;
-  raw.stats.totalClears = "21960";
+  raw.stats.totalClears = "2745";
   raw.stats.highestStage = 549;
   await importSave(page, JSON.stringify(raw));
   await page.clock.runFor(200);
@@ -148,8 +148,8 @@ test("Prestige only displays this cycle's SOUL reward after eligibility", async 
 
   const raw = JSON.parse(fixture("prestige"));
   raw.meta.prestigeCount = 1;
-  raw.run.routeClears = 3960;
-  raw.run.clears = "3960";
+  raw.run.routeClears = 495;
+  raw.run.clears = "495";
   raw.run.highestClearedStage = 99;
   await importSave(page, JSON.stringify(raw));
   await page.getByRole("button", { name: /Prestige ·/ }).click();
@@ -179,7 +179,7 @@ test("deepen unlocks only after each current target CLEAR", async ({
   await expect(deepen).toBeDisabled();
 
   const raw = JSON.parse(fixture("burst"));
-  raw.run.routeClears = 5961;
+  raw.run.routeClears = 746;
   raw.run.clears = "100000";
   raw.run.highestClearedStage = 150;
   raw.run.phase = 0;

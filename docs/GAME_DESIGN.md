@@ -1,4 +1,4 @@
-# LOOP BREAKER — ゲーム設計 v3（Issue #9）
+# LOOP BREAKER — ゲーム設計 v4（Issue #11）
 
 設計日: 2026-10-03。原案: [Issue #1](https://github.com/mkunori/loop-breaker/issues/1)。本書群は初期実装の仕様。数値の正本は [BALANCE_DESIGN.md](BALANCE_DESIGN.md)、処理・保存の正本は [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md)。Issue #3の初期実装・検証結果は [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) を参照。
 
@@ -22,7 +22,7 @@ LOOP BREAKERは巨大数を増やしながらClear Timeの桁を削っていく�
 
 戦闘は連続DPSで解く。攻撃アニメーションやCrit表示は計算結果の演出で、報酬乱数ではない。固定待ちは初期1秒。攻撃演出はClear Time別のLODで制限し、敵ごとのタイマーをゲーム状態に持たない。
 
-Stage開始境界は経路進行CLEAR `40 × (Stage−1)`。初期Stage100への到達は3960 CLEAR、そこで最低1周を完了した3961 CLEARでPrestigeのStage条件を満たす。途中Stageの必要周回数は40。現在Cycleの到達目標までは自動でStageを上げ、目標到達後は同Stageで周回する。初回〜3Cycleの目標は100、その後150、200…と上がる。Stage100までは緩いHP上昇で圧縮を優先し、101以降は敵HP成長を強めて深度と成長を釣り合わせる。
+Stage開始境界は経路進行CLEAR `5 × (Stage−1)`。初期Stage100への到達は495 CLEAR、そこで最低1周を完了した496 CLEARでPrestigeのStage条件を満たす。途中Stageの必要周回数は5。現在Cycleの到達目標までは自動でStageを上げ、目標到達後は同Stageで周回する。初回〜3Cycleの目標は100、その後150、200…と上がる。Stage100までは緩いHP上昇で圧縮を優先し、101以降は敵HP成長を強めて深度と成長を釣り合わせる。
 
 3回目Prestige以降、現在のtargetStageを実際にCLEAR済みの場合のみ「さらに進む」で目標を25増やせる。目標への入場だけでは不可。+25直後は次の目標をCLEARするまで再実行できない。UIとgame commandで同じ条件を確認する。必要Stageを1000で固定しない。技術上の数値保護限界を超えた場合は進行停止・Exportとし、限界StageのPrestigeを無制限に繰り返させない。各CLEARのGoldにStageごとの小さな倍率を掛け、Stage101以降は最大+5%で固定する。深いStageの即時メリットを保ち、Goldインフレの主因にはしない。
 
@@ -30,13 +30,13 @@ Stage開始境界は経路進行CLEAR `40 × (Stage−1)`。初期Stage100への
 
 ## 3. 通常強化と解禁
 
-ATKは最初から購入可能。Attack Speed、Critical、Overkill、Route CompressionはCycle CLEAR 20 / 70 / 140 / 250で順に解禁。400でAUTO ATK解禁。約1:34 / 4:10 / 6:43 / 9:51 / 11:52の目安であり、時計による待機ゲートにはしない。一度解禁した機能はPrestigeを越えて残る。
+ATKは最初から購入可能。Attack Speed、Critical、Overkill、Route CompressionはCycle CLEAR 6 / 20 / 40 / 70で順に解禁。120でAUTO ATK解禁。約0:29 / 1:13 / 1:52 / 2:31 / 3:15の目安であり、時計による待機ゲートにはしない。一度解禁した機能はPrestigeを越えて残る。
 
-初回はSpeed/Crit/Overkillの上限Lv1、RouteはLv6で以後Prestige毎+2、最大Lv30。初回PrestigeでSpeed Lv2、2回目PrestigeでCrit Lv2を解放し、2〜3Cycle目にも「新しい強化にGoldを回すか、ATKを優先するか」という判断を残す。解禁カードに効果、価格、購入後のClear Timeを表示する。購入は即時、現在周の進捗比率は保つ。購入前の時間を先に精算し、Gold不足なら何も変更しない。x1 / MAXのみ用意し、MAXは現在の残高以内、解禁・上限以内。誤購入の取消は設けない。
+初回はSpeed/Crit/Overkillの上限Lv1、RouteはLv6で以後Prestige毎+3、最大Lv30。初回PrestigeでSpeed Lv2、2回目PrestigeでCrit Lv2を解放し、2〜3Cycle目にも「新しい強化にGoldを回すか、ATKを優先するか」という判断を残す。解禁カードに効果、価格、購入後のClear Timeを表示する。購入は即時、現在周の進捗比率は保つ。購入前の時間を先に精算し、Gold不足なら何も変更しない。x1 / MAXのみ用意し、MAXは現在の残高以内、解禁・上限以内。誤購入の取消は設けない。
 
 AUTO ATKは通常攻撃の自動化ではなく**ATK強化の自動購入**。戦闘は初めから自動。解禁時はOFF、明示してONにできる。1秒の表示中時間ごとに予算内でATKをMAX購入する。他強化のためにGoldを残す任意の「予約Gold」を1つだけ設定できる（既定0）。購入停止は即時。Prestige後もON/OFFと予約額を保持。ほかのAUTO系は初期実装に含めず、購入設定を強化IDごとに追加できる構造にする。
 
-3回目PrestigeではSpeed Lv3、Overkill Lv2、Compression Lv2を解放。以後も段階的に上限が上がり、最終上限はSpeed/Crit/Overkill各8、Compression30。全上限を一度に開かず、圧縮の節目を残す。具体的な回数別の上限式はバランス書参照。SOULを消費する解放ではなく、Prestigeマイルストーンの報酬。
+3回目PrestigeではSpeed Lv3、Overkill Lv2、Compression Lv15を解放。以後も段階的に上限が上がり、最終上限はSpeed/Crit/Overkill各8、Compression30。全上限を一度に開かず、圧縮の節目を残す。具体的な回数別の上限式はバランス書参照。SOULを消費する解放ではなく、Prestigeマイルストーンの報酬。
 
 ## 4. Prestige
 
@@ -50,7 +50,7 @@ SOUL表示はPrestige可能な場合のみ「今回 +N SOUL」とする。未達
 
 リセット: Gold、通常強化全Lv、Cycle CLEAR、経路進行CLEAR、現在Stage、周回進捗、Cycle時間、Cycle内最高CLEAR Stage。保持: SOUL、恒久強化、Prestige回数、解禁フラグ、AUTO設定、累積統計、UI設定。SOULを付与し回数を増やす操作とResetは1トランザクション。
 
-POWER / WEALTH / TEMPOはIssueの効果・価格を採用。恒久強化はSOULで買い、自由な配分を認める。初回4 SOULでLv1を1つずつ買える。2回目のみ追加4 SOULを贈り、計8で各Lv2を買える。参考5分20秒/1分58秒はこの均等配分の参考ルートで検証する。別配分まで同じ到達時間にはしない。SOUL指数1.5は12Cycleまでの比較検証を踏まえて維持する。
+POWER / WEALTH / TEMPOはIssueの効果・価格を採用。恒久強化はSOULで買い、自由な配分を認める。初回4 SOULでLv1を1つずつ買える。2回目のみ追加4 SOULを贈り、計8で各Lv2を買える。Cycle2約1分42秒、Cycle3は初BURSTまで約7分57秒はこの均等配分の参考ルートで検証する。別配分まで同じ到達時間にはしない。SOUL指数1.5は12Cycleまでの比較検証を踏まえて維持する。
 
 **LOOP MASTERY（仮称）**は「Prestigeで周回の仕組みそのものを圧縮する」明示的なマイルストーン。初回PrestigeでBREAK I、2回目でBREAK IIを自動獲得し、全RUN時間の倍率が1→0.55→0.36となる。第4のSOUL購入系統にはしない。
 
@@ -62,16 +62,20 @@ Prestige画面のマイルストーン欄には「BREAK I: 全周回時間×0.55
 
 通常画面は1周の進捗バーと敵演出。BURSTは5秒の表示中時間を1区切りに「BURST 5.00 sec / CLEAR ×N / Gold +G」を表示する。区切り中の購入は可能で、その前後の速度で計算する。切替時から新しい5秒窓を始めるが、周回進捗を消さない。途中の窓を表示切替・Prestigeで閉じると「部分BURST」と表示し、Best BURSTの対象にしない。
 
-Nはその窓で実際に完了した整数周回数。窓ごとに端数を切り捨て直さず、周回進捗として繰り越す。1ms未満ならBURSTに入る。数百、数百万、1e12周で敵カードを大量生成せず、演出は最大5回/秒、結果カード1枚だけ。Multi Clear、Parallel Runs等は将来の設定倍率へ接続可能だが、初期実装は倍率1。
+Nはその窓で実際に完了した整数周回数。窓ごとに端数を切り捨て直さず、周回進捗として繰り越す。1ms未満ならBURSTに入る。数百、数百万、1e12周で敵カードを大量生成せず、斬撃LODは最大4回/秒、結果カード1枚だけ。Multi Clear、Parallel Runs等は将来の設定倍率へ接続可能だが、初期実装は倍率1。
 
 ## 6. モバイルUI
 
-基本画面1枚＋Prestige/Stats/設定のボトムシート。BATTLEとUPGRADEは同画面に統合。上段はStageとGold、中央は敵/Hero・DPS・Clear Time・CLEAR数、下段の親指領域にATKと直近解禁カードを固定する。全強化一覧は下段から展開。AUTO切替も同じ領域。初期にPrestige用の空タブを表示しない。
+基本画面1枚＋Prestige/Stats/設定のボトムシート。BATTLEとUPGRADEは同画面に統合。上段はStageとGold、中央は敵/Hero・DPS・Clear Time・CLEAR数、下段の親指領域にATKと非ATK候補1つを固定する。全強化一覧は下段から展開。AUTO切替も同じ領域。初期にPrestige用の空タブを表示しない。
 
 基準幅360px、320pxでも横スクロールなし。ボタン最小48px、セーフエリア対応、文字の省略より科学表記を優先。敵演出より数値の読める大きさを優先する。色だけに依存せず、フォーカス・キーボード・スクリーンリーダー対応。数値は5〜10Hz更新、読み上げは購入/解禁/区切りのみ。減速アニメ設定、音は既定OFF。
 
 PCは中央最大幅480pxを基本とし、広幅では右側に強化一覧を併設できる。新しい管理画面は増やさない。StatsにはTotal Clears / Fastest Clear（Stage付き）/ Highest Stage / Total Gold / Prestige Count / Best BURST / Total Play Timeの集計のみ。BURSTのFastestは理論値であることを示す。
 
-## 7. Issue #9の調整と残課題
+## 7. 過去のIssue #9の調整
 
 Damage base60、待ち1秒、ATK価格100/1.2、Route価格100/1.8、Stage密度40、Route上限6+2p、解禁を調整。HP・Gold・SOUL・MASTERY・深部曲線は維持。候補比較・12Cycle結果・Save互換性・CSS LODは[SPEED_REWORK](SPEED_REWORK.md)を参照。後半の深部停滞と配分による所要時間差は残る。生存戦や新通貨は追加しない。
+
+## Issue #11: 15分BURSTとQuick Buy
+
+ATK価格35/1.12・Route価格2000/1.8・Stage密度5・Route上限6+3p。ATK単独でも固定待ちを圧縮する式を採用。常駐はATK+候補1つの名前/Lv/価格/短縮時間、詳細はシート、AUTO予約はシートのみ。[BURST_15_DESIGN](BURST_15_DESIGN.md)に購入モデルと比較理由を記録。Active初Prestige5:54・初BURST累積15:33、Casual18:03、AUTO Only23:10。3Cycle目はStage100で初BURSTまで育成継続する参考方針。

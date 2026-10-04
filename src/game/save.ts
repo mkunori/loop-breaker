@@ -112,8 +112,15 @@ export function decode(text: string): GameState {
   );
   s.run.gold = big(r.gold);
   s.run.clears = big(r.clears);
-  if (root.balanceVersion === "prototype-2") {
-    const oldBoundary = (stage: number) => Math.ceil((12 * (stage - 1)) / 5);
+  if (
+    root.balanceVersion === "prototype-2" ||
+    root.balanceVersion === "speed-3"
+  ) {
+    const legacy = root.balanceVersion === "prototype-2";
+    const oldNumerator = legacy ? 12 : 40;
+    const oldDenominator = legacy ? 5 : 1;
+    const oldBoundary = (stage: number) =>
+      Math.ceil((oldNumerator * (stage - 1)) / oldDenominator);
     const route = numeric(
       r.routeClears,
       0,
@@ -122,24 +129,35 @@ export function decode(text: string): GameState {
     );
     const oldStage = Math.min(
       s.run.targetStage,
-      1 + Math.floor((route * 5) / 12),
+      1 + Math.floor((route * oldDenominator) / oldNumerator),
     );
     const oldHighest =
       route === 0
         ? 0
-        : Math.min(s.run.targetStage, 1 + Math.floor(((route - 1) * 5) / 12));
-    if (s.run.clears.lt(route) || r.highestClearedStage !== oldHighest)
+        : Math.min(
+            s.run.targetStage,
+            1 + Math.floor(((route - 1) * oldDenominator) / oldNumerator),
+          );
+    if (
+      (legacy && s.run.clears.lt(route)) ||
+      r.highestClearedStage !== oldHighest
+    )
       throw new Error("旧Saveの経路進行が不正です");
     // Preserve Stage and intra-Stage route position, never award imaginary CLEAR/Gold.
     r.routeClears =
       route > oldBoundary(s.run.targetStage)
         ? boundary(s.run.targetStage) + 1
         : boundary(oldStage) +
-          Math.floor(
-            ((route - oldBoundary(oldStage)) *
-              (boundary(oldStage + 1) - boundary(oldStage))) /
-              (oldBoundary(oldStage + 1) - oldBoundary(oldStage)),
-          );
+          (route === oldBoundary(oldStage)
+            ? 0
+            : Math.max(
+                1,
+                Math.floor(
+                  ((route - oldBoundary(oldStage)) *
+                    (boundary(oldStage + 1) - boundary(oldStage))) /
+                    (oldBoundary(oldStage + 1) - oldBoundary(oldStage)),
+                ),
+              ));
   }
   s.run.routeClears = numeric(
     r.routeClears,

@@ -56,7 +56,7 @@ npm.cmd run test:e2e -- tests/e2e/pages-smoke.spec.ts
 Remove-Item Env:PAGES_SMOKE_URL
 ```
 
-公開URL指定時はローカルpreview serverを起動しない。各テストは新しい独立browser contextで一時Saveを作るため、人間のブラウザの本番Saveを読み書きしない。新規開始やfixture Importで既存Saveを破壊する操作は行わない。実際の公開ではfake clockの93秒進行はゲーム待ち時間を検証するためにだけ使用する。
+公開URL指定時はローカルpreview serverを起動しない。各テストは新しい独立browser contextで一時Saveを作るため、人間のブラウザの本番Saveを読み書きしない。新規開始やfixture Importで既存Saveを破壊する操作は行わない。実際の公開ではfake clockの56秒進行はゲーム待ち時間を検証するためにだけ使用する。
 
 ## 制限
 

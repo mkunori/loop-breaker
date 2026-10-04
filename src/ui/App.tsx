@@ -5,6 +5,7 @@ import {
   UPGRADE_IDS,
   type UpgradeId,
 } from "../config/balance";
+import { combatLod } from "../config/combatVisual";
 import { PRESENTATION } from "../config/presentation";
 import { VISUAL } from "../config/visual";
 import {
@@ -33,6 +34,7 @@ import { cloneState, type GameState } from "../game/state";
 import type { GameRuntime } from "../platform/runtime";
 import { AssetImage } from "./AssetImage";
 import { BattleVisual } from "./BattleVisual";
+import { formatTime } from "./formatTime";
 import { MasteryCelebration } from "./MasteryCelebration";
 
 type Sheet = "upgrades" | "prestige" | "stats" | "settings" | null;
@@ -157,7 +159,7 @@ export function App({ runtime }: { runtime: GameRuntime }) {
         <span className="upgrade-effect">
           {effects[id]}
           {isUnlocked && !atCap
-            ? ` → ${format(clearTime(projection))}s / 周`
+            ? ` → ${formatTime(clearTime(projection))} / RUN`
             : ""}
         </span>
       </button>
@@ -233,6 +235,7 @@ export function App({ runtime }: { runtime: GameRuntime }) {
           <span>CYCLE {s.meta.prestigeCount + 1}</span>
         </div>
         <BattleVisual
+          lod={combatLod(time, burst.active)}
           stage={stage}
           enemyIndex={enemyIndex}
           damage={format(damage(s))}
@@ -262,8 +265,8 @@ export function App({ runtime }: { runtime: GameRuntime }) {
           <div>
             <span>CLEAR TIME</span>
             <strong data-testid="clear-time">
-              {format(time)}
-              <small>s / 周</small>
+              {formatTime(time)}
+              <small> / RUN</small>
             </strong>
           </div>
         </div>
@@ -397,7 +400,7 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               <div className="all-upgrades">{UPGRADE_IDS.map(upgrade)}</div>
               <p>
                 LOOP MASTERY ×{mastery(s.meta.prestigeCount)} · 固定待ち{" "}
-                {format(fixedDelay(s).mul(mastery(s.meta.prestigeCount)))}秒
+                {formatTime(fixedDelay(s).mul(mastery(s.meta.prestigeCount)))}
               </p>
               {s.meta.unlocks.autoAtk && (
                 <fieldset>
@@ -493,8 +496,8 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                     overkill: 0,
                     delay: 0,
                   };
-                  return format(clearTime(next, 1));
-                })()}秒/周（SOUL未購入）
+                  return formatTime(clearTime(next, 1));
+                })()} / RUN（SOUL未購入）
               </p>
               <button
                 type="button"
@@ -553,7 +556,7 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               <dt>Fastest Clear（理論）</dt>
               <dd>
                 {s.stats.fastestClear
-                  ? `${format(s.stats.fastestClear)}s / Stage ${s.stats.fastestClearStage}`
+                  ? `${formatTime(s.stats.fastestClear)} / Stage ${s.stats.fastestClearStage}`
                   : "—"}
               </dd>
               <dt>Highest Stage（CLEAR済み）</dt>
@@ -568,7 +571,7 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               <dd>{duration(s.stats.activeSeconds)}</dd>
               <dt>LOOP MASTERY</dt>
               <dd>×{mastery(s.meta.prestigeCount)}</dd>
-              <dt>経路CLEAR</dt>
+              <dt>経路進捗</dt>
               <dd>
                 {s.run.routeClears} / {boundary(s.run.targetStage) + 1}
               </dd>

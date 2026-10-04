@@ -1,3 +1,5 @@
+> prototype-2の数値・進行はIssue #3/#4当時の履歴。現行speed-3は[SPEED_REWORK](SPEED_REWORK.md)と[BALANCE_DESIGN](BALANCE_DESIGN.md)を参照。Save schemaはv1を維持。
+
 # 初期実装・検証記録（Issue #3）
 
 2026-10-03。仕様の正本はGAME_DESIGN / BALANCE_DESIGN / TECHNICAL_DESIGN。バランス値、SOUL指数1.5、Prestigeの条件、解禁、Save v1は変更していない。画像素材・配信・追加ゲームシステムはこの実装に含めない。

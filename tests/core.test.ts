@@ -11,9 +11,9 @@ const almost = (a: { toNumber(): number }, b: number) =>
   expect(a.toNumber()).toBeCloseTo(b, 8);
 function farmState(): GameState {
   const s = initialState();
-  s.run.routeClears = 239;
-  s.run.clears = D(239);
-  s.stats.totalClears = D(239);
+  s.run.routeClears = 3961;
+  s.run.clears = D(3961);
+  s.stats.totalClears = D(3961);
   s.run.highestClearedStage = 100;
   s.stats.highestStage = 100;
   return s;
@@ -33,42 +33,42 @@ describe("balance math", () => {
   });
   it("calculates damage, Crit expectation, Overkill, TEMPO and mastery", () => {
     const s = initialState();
-    almost(math.damage(s), 10);
-    almost(math.dps(s), 10);
-    almost(math.clearTime(s), 30);
+    almost(math.damage(s), 60);
+    almost(math.dps(s), 60);
+    almost(math.clearTime(s), 5);
     s.run.upgrades.atk = 1;
-    almost(math.damage(s), 11.6);
+    almost(math.damage(s), 69.6);
     s.meta.upgrades.power = 1;
-    almost(math.damage(s), 19.72);
+    almost(math.damage(s), 118.32);
     s.run.upgrades.speed = 1;
     s.run.upgrades.crit = 1;
-    almost(math.dps(s), 19.72 * 1.25 * 1.2);
+    almost(math.dps(s), 118.32 * 1.25 * 1.2);
     s.run.upgrades.overkill = 1;
     expect(math.overkill(s)).toBe(1.15);
     const before = math.clearTime(s);
     s.meta.upgrades.tempo = 1;
-    almost(before.sub(math.clearTime(s)), 0.9);
+    almost(before.sub(math.clearTime(s)), 0.15);
     s.meta.prestigeCount = 2;
-    almost(math.clearTime(s), before.sub(0.9).mul(0.36).toNumber());
+    almost(math.clearTime(s), before.sub(0.15).mul(0.36).toNumber());
     expect(math.mastery(20)).toBe(0.36);
   });
   it("defines caps and stage boundaries precisely", () => {
     expect(
       [0, 1, 2, 3, 9].map((p) => UPGRADE_IDS.map((id) => math.cap(id, p))),
     ).toEqual([
-      [1e6, 1, 1, 1, 1],
-      [1e6, 2, 1, 1, 1],
-      [1e6, 2, 2, 1, 1],
-      [1e6, 3, 2, 2, 2],
-      [1e6, 6, 5, 5, 5],
+      [1e6, 1, 1, 1, 6],
+      [1e6, 2, 1, 1, 8],
+      [1e6, 2, 2, 1, 10],
+      [1e6, 3, 2, 2, 12],
+      [1e6, 6, 5, 5, 24],
     ]);
     const s = initialState();
     for (const [n, expected] of [
       [0, 1],
-      [3, 2],
-      [12, 6],
-      [238, 100],
-      [239, 100],
+      [40, 2],
+      [200, 6],
+      [3960, 100],
+      [3961, 100],
     ]) {
       s.run.routeClears = n;
       expect(math.stageAt(s)).toBe(expected);
@@ -81,8 +81,8 @@ describe("balance math", () => {
     almost(math.hp(101).div(math.hp(100)), 1.02204);
   });
   it("quotes MAX by a closed series, with exact budget and cap", () => {
-    almost(math.price("atk", 0), 25);
-    almost(math.price("atk", 1), 28.75);
+    almost(math.price("atk", 0), 100);
+    almost(math.price("atk", 1), 120);
     for (const id of UPGRADE_IDS) {
       const total = math.bulkPrice(id, 2, 10);
       let reference = D(0);
@@ -93,7 +93,7 @@ describe("balance math", () => {
       expect(math.maxBuy(id, 2, total.mul(0.999), 100)).toBe(9);
       expect(math.maxBuy(id, 2, total, 4)).toBe(2);
     }
-    expect(math.maxBuy("atk", 0, D(24), 1e6)).toBe(0);
+    expect(math.maxBuy("atk", 0, D(99), 1e6)).toBe(0);
     expect(math.maxBuy("atk", 0, D("1e10000"), 1e6)).toBeGreaterThan(100000);
   });
   it("matches periodic HP/Gold sums against small reference loops", () => {
@@ -101,14 +101,14 @@ describe("balance math", () => {
     s.run.targetStage = 450;
     for (const [from, to] of [
       [0, 12],
-      [214, 267],
-      [0, 1079],
-      [238, 350],
+      [3580, 4450],
+      [0, 17961],
+      [3960, 6000],
     ]) {
       let time = D(0),
         gold = D(0);
       for (let n = from; n < to; n++) {
-        const stage = Math.min(450, 1 + Math.floor((5 * n) / 12));
+        const stage = Math.min(450, 1 + Math.floor(n / 40));
         time = time.add(math.clearTime(s, stage));
         gold = gold.add(math.goldPerClear(s, stage));
       }
@@ -126,12 +126,12 @@ describe("balance math", () => {
         s.run.targetStage = 200;
         let time = D(0),
           gold = D(0);
-        for (let n = 0; n < 470; n++) {
-          const stage = 1 + Math.floor((5 * n) / 12);
+        for (let n = 0; n < 8000; n++) {
+          const stage = 1 + Math.floor(n / 40);
           time = time.add(math.clearTime(s, stage));
           gold = gold.add(math.goldPerClear(s, stage));
         }
-        const summed = math.rangeTotals(s, 0, 470);
+        const summed = math.rangeTotals(s, 0, 8000);
         almost(summed.time.div(time), 1);
         almost(summed.gold.div(gold), 1);
       }
@@ -143,9 +143,9 @@ describe("balance math", () => {
 describe("advance and commands", () => {
   it("awards actual clears, preserves phase, unlocks and input immutability", () => {
     let s = initialState();
-    const first = advance(s, 5).state;
+    const first = advance(s, 1).state;
     expect(s.run.phase).toBe(0);
-    almost(D(first.run.phase), 1 / 6);
+    almost(D(first.run.phase), 1 / 5);
     for (let i = 0; i < 37; i++) s = advance(s, 5).state;
     expect(s.run.clears.toNumber()).toBeGreaterThanOrEqual(6);
     expect(s.meta.unlocks.speed).toBe(true);
@@ -160,7 +160,7 @@ describe("advance and commands", () => {
       command(s, { type: "buy", id: "crit" }).state.run.upgrades.crit,
     ).toBe(0);
     const bought = command(s, { type: "buy", id: "atk", max: true }).state;
-    expect(bought.run.upgrades.atk).toBe(3);
+    expect(bought.run.upgrades.atk).toBe(1);
     expect(bought.run.phase).toBe(0.7);
     expect(bought.run.gold.gte(0)).toBe(true);
     s.meta.unlocks.speed = true;
@@ -207,16 +207,20 @@ describe("advance and commands", () => {
     const s = farmState();
     s.meta.prestigeCount = 3;
     const mock = vi.spyOn(math, "clearTime").mockReturnValue(D(0.001));
+    vi.spyOn(math, "rangeTotals").mockImplementation((_s, from, to) => ({
+      time: D(to - from).mul(0.001),
+      gold: D(to - from).mul(10),
+    }));
     const farmed = advance(s, 5).state;
     expect(farmed.run.clears.gt(5000)).toBe(true);
-    expect(farmed.run.routeClears).toBe(239);
+    expect(farmed.run.routeClears).toBe(3961);
     const deep = command(farmed, { type: "deepen" }).state;
     expect(math.stageAt(deep)).toBe(100);
-    expect(deep.run.routeClears).toBe(239);
+    expect(deep.run.routeClears).toBe(3961);
     expect(deep.run.targetStage).toBe(125);
     expect(command(deep, { type: "deepen" }).state.run.targetStage).toBe(125);
-    const resumed = advance(deep, 0.001).state;
-    expect(resumed.run.routeClears).toBe(240);
+    const resumed = advance(deep, 0.039).state;
+    expect(resumed.run.routeClears).toBe(4000);
     expect(resumed.run.highestClearedStage).toBe(100);
     expect(math.stageAt(resumed)).toBe(101);
     mock.mockRestore();
@@ -236,7 +240,7 @@ describe("advance and commands", () => {
     expect(next.run.routeClears).toBe(0);
     expect(next.run.gold.eq(0)).toBe(true);
     expect(next.run.phase).toBe(0);
-    expect(next.stats.totalClears.eq(239)).toBe(true);
+    expect(next.stats.totalClears.eq(3961)).toBe(true);
     expect(next.automation.atkEnabled).toBe(true);
     expect(next.settings.reducedMotion).toBe(true);
     expect(
@@ -254,14 +258,14 @@ describe("advance and commands", () => {
   it("AUTO respects the second boundary, reserve and ON/OFF", () => {
     const s = initialState();
     s.meta.unlocks.autoAtk = true;
-    s.run.gold = D(100);
+    s.run.gold = D(200);
     s.automation.atkEnabled = true;
     s.automation.reserveGold = D(70);
     let next = advance(s, 0.5).state;
     expect(next.run.upgrades.atk).toBe(0);
     next = advance(next, 0.5).state;
     expect(next.run.upgrades.atk).toBe(1);
-    expect(next.run.gold.toNumber()).toBe(75);
+    expect(next.run.gold.toNumber()).toBe(100);
     next.automation.atkEnabled = false;
     expect(advance(next, 1).state.run.upgrades.atk).toBe(1);
   });
@@ -270,29 +274,33 @@ describe("advance and commands", () => {
     (count) => {
       vi.spyOn(math, "clearTime").mockReturnValue(D(5).div(count));
       const result = advance(farmState(), 5);
-      expect(result.state.run.clears.sub(239).toNumber()).toBe(count);
-      expect(result.state.stats.bestBurstClears.toNumber()).toBe(count);
+      expect(result.state.run.clears.sub(3961).toNumber()).toBe(count);
+      expect(result.state.stats.bestBurstClears.toNumber()).toBe(
+        count > 5000 ? count : 0,
+      );
       expect(result.state.run.phase).toBeCloseTo(0, 8);
       expect(result.diagnostics.segments).toBe(5);
       expect(result.diagnostics.stageComparisons).toBe(0);
-      expect(result.events.filter((e) => e.kind === "burst")).toHaveLength(1);
+      expect(result.events.filter((e) => e.kind === "burst")).toHaveLength(
+        count > 5000 ? 1 : 0,
+      );
     },
   );
   it("preserves sub-run fractions, hysteresis and partial-window statistics", () => {
-    const mock = vi.spyOn(math, "clearTime").mockReturnValue(D(0.8));
+    const mock = vi.spyOn(math, "clearTime").mockReturnValue(D(5).div(6000.25));
     let s = advance(farmState(), 5).state;
     expect(s.run.phase).toBeCloseTo(0.25, 8);
-    expect(s.stats.bestBurstClears.toNumber()).toBe(6);
-    mock.mockReturnValue(D(1.05));
+    expect(s.stats.bestBurstClears.toNumber()).toBe(6000);
+    mock.mockReturnValue(D(0.00105));
     s = advance(s, 0.5).state;
     expect(s.run.burst.active).toBe(true);
-    mock.mockReturnValue(D(1.1));
+    mock.mockReturnValue(D(0.0011));
     const exit = advance(s, 0.5);
     expect(exit.state.run.burst.active).toBe(false);
     expect(
       exit.events.some((e) => e.kind === "burst" && e.result.partial),
     ).toBe(true);
-    expect(exit.state.stats.bestBurstClears.toNumber()).toBe(6);
+    expect(exit.state.stats.bestBurstClears.toNumber()).toBe(6000);
   });
   it("equals divided time integration across Stage boundaries", () => {
     const s = initialState();
@@ -318,7 +326,7 @@ describe("advance and commands", () => {
     s.run.autoClock = 1 - 1e-11;
     const result = advance(s, 5);
     expect(
-      Math.abs(result.state.run.clears.sub(239).toNumber() - 1e12),
+      Math.abs(result.state.run.clears.sub(3961).toNumber() - 1e12),
     ).toBeLessThanOrEqual(1);
     expect(result.diagnostics.segments).toBeLessThanOrEqual(6);
     expect(result.state.run.activeSeconds).toBeCloseTo(5, 12);
@@ -387,18 +395,18 @@ describe("reference player through twelve cycles", () => {
         s = command(s, { type: "permanent", id }).state;
       }
     }
-    expect(times[0]).toBeGreaterThan(26 * 60);
-    expect(times[0]).toBeLessThan(35 * 60);
-    expect(times[1]).toBeGreaterThan(8 * 60);
-    expect(times[1]).toBeLessThan(12 * 60);
-    expect(times[2]).toBeGreaterThan(4 * 60);
-    expect(times[2]).toBeLessThan(6 * 60);
-    expect(at25).toBeGreaterThan(4);
-    expect(at25).toBeLessThan(6);
-    expect(firstBurst).toBe(3);
+    expect(times[0]).toBeGreaterThan(25 * 60);
+    expect(times[0]).toBeLessThan(28 * 60);
+    expect(times[1]).toBeGreaterThan(300);
+    expect(times[1]).toBeLessThan(340);
+    expect(times[2]).toBeGreaterThan(110);
+    expect(times[2]).toBeLessThan(125);
+    expect(at25).toBeGreaterThan(0.1);
+    expect(at25).toBeLessThan(0.2);
+    expect(firstBurst).toBe(10);
     const reference = [
-      1823.23, 555.77, 276.27, 244.62, 310.72, 207.21, 223.53, 176.11, 201.81,
-      204.41, 321.02, 465.84,
+      1579.09, 320.39, 117.61, 103.49, 100.06, 82.09, 116.07, 134.48, 230.92,
+      361.92, 751.27, 1400.48,
     ];
     times.forEach((t, i) => {
       expect(Math.abs(t - reference[i])).toBeLessThan(3);

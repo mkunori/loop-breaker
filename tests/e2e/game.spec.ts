@@ -27,7 +27,7 @@ test("runs automatically and pauses hidden time without offline catch-up", async
   await expect(
     page.getByRole("heading", { name: "LOOPBREAKER" }),
   ).toBeVisible();
-  await page.clock.runFor(31000);
+  await page.clock.runFor(6000);
   await expect(page.getByTestId("clears")).toHaveText("1");
   await page.evaluate(() => {
     Object.defineProperty(document, "hidden", {
@@ -58,9 +58,9 @@ test("supports purchases, all upgrades, mobile fit and Save export/import", asyn
   await page.getByTestId("buy-atk").click();
   await expect(page.getByTestId("buy-atk")).toContainText("Lv 1");
   await page.getByRole("button", { name: "UPGRADES" }).click();
-  await expect(page.getByTestId("buy-speed")).toContainText("6 CLEARで解禁");
+  await expect(page.getByTestId("buy-speed")).toContainText("20 CLEARで解禁");
   await page.getByRole("button", { name: "閉じる", exact: true }).click();
-  await expect(page.getByTestId("clear-time")).toContainText("26.69");
+  await expect(page.getByTestId("clear-time")).toContainText("4.45");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -99,7 +99,7 @@ test("Prestige, SOUL upgrades, mastery and AUTO settings work together", async (
     await page.getByRole("button", { name: new RegExp(`${id} Lv0`) }).click();
   await page.getByRole("button", { name: "閉じる", exact: true }).click();
   await expect(page.getByTestId("stage")).toHaveText("1");
-  await expect(page.getByTestId("clear-time")).toContainText("10.57");
+  await expect(page.getByTestId("clear-time")).toContainText("1.76");
   await expect(page.getByLabel("AUTO ATK購入")).toBeChecked();
 });
 test("BURST displays aggregate results, survives reload and exits at deeper stages", async ({
@@ -119,10 +119,10 @@ test("BURST displays aggregate results, survives reload and exits at deeper stag
   await expect(page.getByText("BURST MODE", { exact: true })).toBeVisible();
   const raw = JSON.parse(fixture("burst"));
   raw.run.targetStage = 550;
-  raw.run.routeClears = 1318;
-  raw.run.clears = "1318";
+  raw.run.routeClears = 21960;
+  raw.run.clears = "21960";
   raw.run.highestClearedStage = 549;
-  raw.stats.totalClears = "1318";
+  raw.stats.totalClears = "21960";
   raw.stats.highestStage = 549;
   await importSave(page, JSON.stringify(raw));
   await page.clock.runFor(200);
@@ -148,8 +148,8 @@ test("Prestige only displays this cycle's SOUL reward after eligibility", async 
 
   const raw = JSON.parse(fixture("prestige"));
   raw.meta.prestigeCount = 1;
-  raw.run.routeClears = 238;
-  raw.run.clears = "238";
+  raw.run.routeClears = 3960;
+  raw.run.clears = "3960";
   raw.run.highestClearedStage = 99;
   await importSave(page, JSON.stringify(raw));
   await page.getByRole("button", { name: /Prestige ·/ }).click();
@@ -167,6 +167,8 @@ test("Prestige only displays this cycle's SOUL reward after eligibility", async 
 test("deepen unlocks only after each current target CLEAR", async ({
   page,
 }) => {
+  // At sub-ms speeds even the assertion delay can traverse the new route.
+  await page.clock.pauseAt(new Date(Date.now() + 60000));
   await importSave(page, fixture("prestige"));
   const deepen = page.getByRole("button", {
     name: "さらに進む +25",
@@ -177,7 +179,7 @@ test("deepen unlocks only after each current target CLEAR", async ({
   await expect(deepen).toBeDisabled();
 
   const raw = JSON.parse(fixture("burst"));
-  raw.run.routeClears = 359;
+  raw.run.routeClears = 5961;
   raw.run.clears = "100000";
   raw.run.highestClearedStage = 150;
   raw.run.phase = 0;

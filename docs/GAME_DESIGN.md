@@ -28,6 +28,8 @@ Stage開始境界は経路進行CLEAR `5 × (Stage−1)`。初期Stage100への�
 
 目標到達後の稼ぎCLEARは経路進行へ貯めない。総Cycle CLEARと、目標Stageの初CLEARまで進む経路進行CLEAR（routeClears）を別集計し、後者は目標で止める。「さらに進む」でも経路進行から再開するため、弱いStageで貯めた大量CLEARで深い敵を飛ばしてSOULを得ることはできない。過去CLEARへの新Stage倍率の遡及付与もない。通常の自動進行中は両CLEARが同じ値になる。
 
+Issue #13: 任意のAUTO ADVANCEを「さらに進む +25」の隣へ追加。Prestige3回以上で表示し、現在Target攻略後だけ+25を自動実行する。OFFは既存Farm、ONは連続した経路進行。攻略済みでONなら1回だけ進め、手動DeepenはON中disabled/no-op。Prestigeは手動で、設定はReset後も保持。Target更新を集約し、Stageスキップ・無料攻略・新たな購入機会は与えない。[AUTO_ADVANCE](AUTO_ADVANCE.md)を参照。
+
 ## 3. 通常強化と解禁
 
 ATKは最初から購入可能。Attack Speed、Critical、Overkill、Route CompressionはCycle CLEAR 6 / 20 / 40 / 70で順に解禁。120でAUTO ATK解禁。約0:29 / 1:13 / 1:52 / 2:31 / 3:15の目安であり、時計による待機ゲートにはしない。一度解禁した機能はPrestigeを越えて残る。

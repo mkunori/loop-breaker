@@ -20,7 +20,7 @@ test("Pages base path loads metadata, assets, battle and persistent Save", async
   await expect(page).toHaveTitle("LOOP BREAKER");
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     "content",
-    /30秒のRUN/,
+    /5秒のRUN/,
   );
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(
     "content",

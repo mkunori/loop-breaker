@@ -170,6 +170,10 @@ export function decode(text: string): GameState {
   )
     throw new Error("BURSTの途中状態が不正です");
   s.automation = {
+    autoAdvanceEnabled:
+      a.autoAdvanceEnabled === undefined
+        ? false
+        : boolean(a.autoAdvanceEnabled),
     atkEnabled: boolean(a.atkEnabled),
     reserveGold: big(a.reserveGold),
   };

@@ -16,6 +16,35 @@ export const stageAt = (s: GameState): number =>
   );
 export const requiredStage = (p: number): number =>
   BALANCE.stage.firstTarget + BALANCE.stage.step * Math.max(0, p - 2);
+// The final reachable +25 target, preserving the current target's residue.
+export function autoAdvanceCeiling(s: GameState): number {
+  return s.automation.autoAdvanceEnabled && s.meta.prestigeCount >= 3
+    ? s.run.targetStage +
+        Math.floor(
+          (BALANCE.limits.stage - s.run.targetStage) / BALANCE.stage.deepen,
+        ) *
+          BALANCE.stage.deepen
+    : s.run.targetStage;
+}
+export function autoAdvanceTarget(
+  s: GameState,
+  initialTarget = s.run.targetStage,
+): number {
+  if (
+    !s.automation.autoAdvanceEnabled ||
+    s.meta.prestigeCount < 3 ||
+    s.run.highestClearedStage < initialTarget
+  )
+    return initialTarget;
+  const steps =
+    Math.floor(
+      (s.run.highestClearedStage - initialTarget) / BALANCE.stage.deepen,
+    ) + 1;
+  const available = Math.floor(
+    (BALANCE.limits.stage - initialTarget) / BALANCE.stage.deepen,
+  );
+  return initialTarget + Math.min(steps, available) * BALANCE.stage.deepen;
+}
 export const mastery = (p: number): Big =>
   D(BALANCE.mastery[Math.min(2, p)]).mul(
     D(BALANCE.masteryContinuation.factor).pow(

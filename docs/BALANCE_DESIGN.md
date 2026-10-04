@@ -60,6 +60,8 @@ AUTO解禁195.41秒。Casual初BURST1082.87秒、AUTO Only1389.89秒、Immediate
 
 ## 精度・互換性
 
+Issue #13はQoLのみ。AUTO ADVANCE OFFなら以下のバランスと参照時間は変更なし。ONは攻略後の+25を自動実行するため深部HPへ早く進むが、計算式・価格・上限・解禁・Prestige条件・SOUL・MASTERY・BURST閾値は無変更。[AUTO_ADVANCE](AUTO_ADVANCE.md)を参照。
+
 本体はBigと数式一括計算を維持。Stage密度は周期1で、幾何/等差数列と二分探索を既存モデルで継続する。表示丸めを計算に戻さない。Python参照だけCLEARを列挙する。
 
 Save Version1 / balanceVersion speed-4。正式リリースまではBalance間のSave互換性を保証しない。異なるbalanceVersionは明示的に拒否し、経路変換も暗黙の読替えも行わない。旧Saveの原文を残しExport可能にして、新規開始はユーザーの確認後のみ。現行版同士のSave / reload / Export / Importとcurrent / backupは維持。経路進行は実CLEAR以下を検証する。

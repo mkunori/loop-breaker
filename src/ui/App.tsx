@@ -323,13 +323,36 @@ export function App({ runtime }: { runtime: GameRuntime }) {
           Stats
         </button>
         {s.meta.prestigeCount >= 3 && (
-          <button
-            type="button"
-            disabled={!canDeepen(s) || view.fatal}
-            onClick={() => runtime.dispatch({ type: "deepen" })}
-          >
-            さらに進む +{BALANCE.stage.deepen}
-          </button>
+          <div className="advance-controls">
+            <button
+              type="button"
+              disabled={
+                !canDeepen(s) ||
+                s.automation.autoAdvanceEnabled ||
+                s.run.targetStage + BALANCE.stage.deepen >
+                  BALANCE.limits.stage ||
+                view.fatal
+              }
+              onClick={() => runtime.dispatch({ type: "deepen" })}
+            >
+              さらに進む +{BALANCE.stage.deepen}
+            </button>
+            <label className="auto-advance">
+              <input
+                type="checkbox"
+                aria-label="AUTO ADVANCE"
+                disabled={view.fatal}
+                checked={s.automation.autoAdvanceEnabled}
+                onChange={(e) =>
+                  runtime.dispatch({
+                    type: "autoAdvance",
+                    enabled: e.target.checked,
+                  })
+                }
+              />
+              AUTO ADVANCE {s.automation.autoAdvanceEnabled ? "ON" : "OFF"}
+            </label>
+          </div>
         )}
       </nav>
       <section className="control-panel" aria-label="主要強化">

@@ -166,6 +166,8 @@ Loadはcurrent検証→失敗ならbackup→両方失敗なら新規開始の選
 
 ## 8. Version / Migration
 
+Issue #13の同一Balance拡張: automation.autoAdvanceEnabledをbooleanで保存。欠損時false、型不正は拒否。saveVersion1 / balanceVersion speed-4のまま。旧Balance拒否は変更しない。Prestigeはautomation全体を保持する。集約進行は計算用の最終+25上限を使い、実際の最高CLEAR StageからTargetをO(1)で導出する。BURST退出探索も同じ上限を使う。CLEAR/Target比例loopやUI通知を追加しない。[AUTO_ADVANCE](AUTO_ADVANCE.md)に式・計算量・保護上限・テスト方針を記録。
+
 saveVersionは構造変更、balanceVersionは式や価格変更。**正式リリースまではBalance間のSave互換性を保証しない。** schema v1、balanceVersion speed-4を維持し、異なるBalanceはdecode/Importで明示的に拒否する。prototype-2 / speed-3の経路変換を削除し、旧版の暗黙読替えをしない。将来のschema migration registryは残し、登録された純粋関数を順に適用して最後に全体検証する。今は架空のv0 migrationを実装しない。Migrationにclockやネットワークを使わない。
 
 将来のschema変更では追加フィールドのdefault、削除、ID mappingを個別に設計する。装備個体や履歴へ変換しない。現行BalanceのStageはrun.routeClears/targetから再計算し、保存stageとの差があれば表示用stageを修復する。経路進行は0〜b(target)+1かつ総CLEAR以下を検証する。Balance間の変換や補償を汎用registryへ詰め込まない。

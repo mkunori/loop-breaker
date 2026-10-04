@@ -1,5 +1,7 @@
 import { BALANCE, UPGRADE_IDS } from "../config/balance";
 import {
+  autoAdvanceCeiling,
+  autoAdvanceTarget,
   boundary,
   bulkPrice,
   cap,
@@ -94,6 +96,7 @@ function unlocks(s: GameState, events: GameEvent[]): void {
 // Ability/Stage increases monotonically within this interval. Limit at the first
 // Stage where BURST must exit, so even a fast Stage jump preserves window timing.
 function untilModeExit(s: GameState, diag: Diagnostics): number {
+  s = { ...s, run: { ...s.run, targetStage: autoAdvanceCeiling(s) } };
   if (
     !s.run.burst.active ||
     clearTime(s, s.run.targetStage).lt(BALANCE.burst.exit)
@@ -116,6 +119,19 @@ function untilModeExit(s: GameState, diag: Diagnostics): number {
     .toNumber();
 }
 function integrate(s: GameState, seconds: number, diag: Diagnostics): void {
+  const target = s.run.targetStage;
+  s.run.targetStage = autoAdvanceCeiling(s);
+  try {
+    integrateRoute(s, seconds, diag);
+  } finally {
+    s.run.targetStage = autoAdvanceTarget(s, target);
+  }
+}
+function integrateRoute(
+  s: GameState,
+  seconds: number,
+  diag: Diagnostics,
+): void {
   diag.segments++;
   let remaining = D(seconds);
   const routeEnd = boundary(s.run.targetStage) + 1;
@@ -189,6 +205,7 @@ export function advance(
     events: GameEvent[] = [],
     diag: Diagnostics = { segments: 0, stageComparisons: 0, formulaGroups: 0 };
   let left = elapsed;
+  s.run.targetStage = autoAdvanceTarget(s);
   reconcileMode(s, events);
   while (left > 0) {
     const untilAuto = BALANCE.autoInterval - s.run.autoClock;

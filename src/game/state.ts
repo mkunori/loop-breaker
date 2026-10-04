@@ -26,7 +26,11 @@ export interface GameState {
     upgrades: Record<PermanentId, number>;
     unlocks: Record<Exclude<UpgradeId, "atk"> | "autoAtk" | "burst", boolean>;
   };
-  automation: { atkEnabled: boolean; reserveGold: Big };
+  automation: {
+    atkEnabled: boolean;
+    reserveGold: Big;
+    autoAdvanceEnabled: boolean;
+  };
   stats: {
     totalClears: Big;
     totalGoldEarned: Big;
@@ -67,7 +71,11 @@ export function initialState(): GameState {
         burst: false,
       },
     },
-    automation: { atkEnabled: false, reserveGold: D(0) },
+    automation: {
+      atkEnabled: false,
+      reserveGold: D(0),
+      autoAdvanceEnabled: false,
+    },
     stats: {
       totalClears: D(0),
       totalGoldEarned: D(0),

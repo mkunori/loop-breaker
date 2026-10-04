@@ -10,6 +10,8 @@ React + TypeScript + Vite、通常CSS、break_infinity.jsを使用していま�
 
 正式リリースまではBalance間のSave互換性を保証しません。旧BalanceのSaveは明示的なエラーで停止し、自動変換や削除は行いません。必要なら原文をExportしたうえで、設定から「新規開始」を選んでください。現行Balance同士のSave / reload / Export / Importは利用できます。
 
+Prestige3回以降は「さらに進む +25」の隣でAUTO ADVANCEをONにすると、Target攻略後の深化を自動化できます。OFFならそのTargetで育成を継続できます。Prestigeは手動のままです。[仕様と集約処理](docs/AUTO_ADVANCE.md)。
+
 Node.js 24とnpmを使用します。依存バージョンはpackage-lock.jsonで固定しています。
 
 ```sh

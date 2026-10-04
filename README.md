@@ -8,6 +8,8 @@
 
 React + TypeScript + Vite、通常CSS、break_infinity.jsを使用しています。バックエンドは不要です。SaveはlocalStorageに保存され、Export / Importできます。非表示中や終了中の進行はありません。複数タブで同時にプレイしないでください。
 
+正式リリースまではBalance間のSave互換性を保証しません。旧BalanceのSaveは明示的なエラーで停止し、自動変換や削除は行いません。必要なら原文をExportしたうえで、設定から「新規開始」を選んでください。現行Balance同士のSave / reload / Export / Importは利用できます。
+
 Node.js 24とnpmを使用します。依存バージョンはpackage-lock.jsonで固定しています。
 
 ```sh

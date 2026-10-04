@@ -1,4 +1,6 @@
-﻿# Issue #9: Clear Timeの桁を削る
+> Issue #9の過去検証記録。現行仕様は[BURST_15_DESIGN](BURST_15_DESIGN.md)とBALANCE_DESIGN v4。当時のSave互換性対応はPR #12レビューで廃止。正式リリースまではBalance間のSave互換性を保証せず、異なる版は明示的に拒否する。
+
+# Issue #9: Clear Timeの桁を削る
 
 実装前に既存数式と設計用参照モデルで比較した。LOOP BREAKERの中心は「巨大数を増やしながら、Clear Timeの桁を削っていくゲーム」。新規5秒 = HP240 / Damage60 + 固定待ち1秒。攻撃頻度・Crit期待値・Overkill再利用・Gold式・SOUL指数1.5・MASTERY・Stage100後HP曲線・5秒集計は維持する。
 

@@ -60,7 +60,7 @@ export function command(
       label:
         s.meta.prestigeCount <= 2
           ? `LOOP MASTERY / BREAK ${s.meta.prestigeCount === 1 ? "I" : "II"}`
-          : "通常強化の上限アップ",
+          : "通常強化の上限アップ / LOOP MASTERY 継続短縮",
     });
   } else if (cmd.type === "deepen") {
     if (!canDeepen(s)) return { state: s, events };

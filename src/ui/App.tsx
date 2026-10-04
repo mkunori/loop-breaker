@@ -43,11 +43,11 @@ const duration = (seconds: number) =>
     .toString()
     .padStart(2, "0")}`;
 const effects: Record<UpgradeId, string> = {
-  atk: `Damage ×${BALANCE.damage.growth}`,
+  atk: `Damage ×${BALANCE.damage.growth} / ATK待ち係数 ×${BALANCE.delay.atk}`,
   speed: `攻撃頻度 ×${BALANCE.speedGrowth}`,
   crit: `Crit率 +${BALANCE.critChance * 100}% / ${BALANCE.critMultiplier}倍ダメージ`,
   overkill: `再利用倍率 +${BALANCE.overkill}`,
-  delay: `固定待ち ×${BALANCE.delay.compression}`,
+  delay: `Route待ち係数 ×${BALANCE.delay.compression}（ATKと合算）`,
 };
 let audio: AudioContext | undefined;
 function beep(): void {
@@ -117,16 +117,19 @@ export function App({ runtime }: { runtime: GameRuntime }) {
   const stage = stageAt(s),
     time = clearTime(s),
     burst = s.run.burst;
-  const candidate = [...UPGRADE_IDS]
+  const candidates = [...UPGRADE_IDS]
     .reverse()
-    .find(
+    .filter(
       (id) =>
         id !== "atk" &&
         unlocked(s, id) &&
         s.run.upgrades[id] < cap(id, s.meta.prestigeCount),
     );
+  const candidate =
+    candidates.find((id) => s.run.gold.gte(price(id, s.run.upgrades[id]))) ??
+    candidates[0];
   const nextUnlock = UPGRADE_IDS.find((id) => !unlocked(s, id));
-  function upgrade(id: UpgradeId) {
+  function upgrade(id: UpgradeId, quick = false) {
     const level = s.run.upgrades[id],
       upper = cap(id, s.meta.prestigeCount),
       isUnlocked = unlocked(s, id);
@@ -138,7 +141,7 @@ export function App({ runtime }: { runtime: GameRuntime }) {
     return (
       <button
         type="button"
-        className={`upgrade ${id === "atk" ? "primary-upgrade" : ""}`}
+        className={`upgrade ${quick ? "quick-buy" : ""} ${id === "atk" ? "primary-upgrade" : ""}`}
         key={id}
         data-testid={`buy-${id}`}
         disabled={
@@ -147,7 +150,16 @@ export function App({ runtime }: { runtime: GameRuntime }) {
         onClick={() => buy(id)}
       >
         <span className="upgrade-name">
-          {BALANCE.upgrades[id].label} <small>Lv {level}</small>
+          {quick
+            ? {
+                atk: "ATK",
+                speed: "Speed",
+                crit: "Crit",
+                overkill: "Overkill",
+                delay: "Route",
+              }[id]
+            : BALANCE.upgrades[id].label}{" "}
+          <small>Lv {level}</small>
         </span>
         <span className="upgrade-cost">
           {!isUnlocked
@@ -157,9 +169,13 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               : `${maxMode ? `MAX ×${n} · ` : ""}${format(cost, true)} G`}
         </span>
         <span className="upgrade-effect">
-          {effects[id]}
+          {quick
+            ? id === "atk"
+              ? ""
+              : `${formatTime(time)} → `
+            : `${effects[id]} · Cap ${upper}`}
           {isUnlocked && !atCap
-            ? ` → ${formatTime(clearTime(projection))} / RUN`
+            ? `${quick ? (id === "atk" ? "→ " : "") : " → "}${formatTime(clearTime(projection))}${quick ? "" : " / RUN"}`
             : ""}
         </span>
       </button>
@@ -339,9 +355,9 @@ export function App({ runtime }: { runtime: GameRuntime }) {
           </div>
         </div>
         <div className="quick-upgrades">
-          {upgrade("atk")}
+          {upgrade("atk", true)}
           {candidate ? (
-            upgrade(candidate)
+            upgrade(candidate, true)
           ) : nextUnlock ? (
             <div className="next-unlock">
               NEXT: {BALANCE.upgrades[nextUnlock].label}
@@ -358,14 +374,12 @@ export function App({ runtime }: { runtime: GameRuntime }) {
             <label>
               <input
                 type="checkbox"
+                aria-label="AUTO ATK購入"
                 checked={s.automation.atkEnabled}
                 onChange={(e) => updateAuto(e.target.checked)}
               />{" "}
-              AUTO ATK購入
+              <span>AUTO ATK {s.automation.atkEnabled ? "ON" : "OFF"}</span>
             </label>
-            <button type="button" onClick={() => open("upgrades")}>
-              予約 {format(s.automation.reserveGold)} G
-            </button>
           </div>
         )}
       </section>
@@ -397,9 +411,15 @@ export function App({ runtime }: { runtime: GameRuntime }) {
           {sheet === "upgrades" && (
             <>
               <p>戦闘は最初から自動。購入で1周の時間を短くします。</p>
-              <div className="all-upgrades">{UPGRADE_IDS.map(upgrade)}</div>
+              <div className="all-upgrades">
+                {UPGRADE_IDS.map((id) => upgrade(id))}
+              </div>
               <p>
-                LOOP MASTERY ×{mastery(s.meta.prestigeCount)} · 固定待ち{" "}
+                ATKとRouteは待ち時間を共同で圧縮します。目標Stage攻略後も育成を続けられます。Prestigeするか、今のCycleでBURSTを目指すかを選べます。
+              </p>
+              <p>
+                LOOP MASTERY ×{mastery(s.meta.prestigeCount).toPrecision(4)} ·
+                固定待ち{" "}
                 {formatTime(fixedDelay(s).mul(mastery(s.meta.prestigeCount)))}
               </p>
               {s.meta.unlocks.autoAtk && (
@@ -452,6 +472,12 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               <p>
                 次Cycle目標: Stage {requiredStage(s.meta.prestigeCount + 1)}
               </p>
+              {s.meta.prestigeCount >= 2 && !s.meta.unlocks.burst && (
+                <p>
+                  今のCycleでさらに圧縮するとBURSTを目指せます。Prestigeを続けてもLOOP
+                  MASTERYの継続短縮が育ちます。
+                </p>
+              )}
               <h3>LOOP MASTERY</h3>
               <div className="milestones">
                 <p>
@@ -469,6 +495,17 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                         ? "今回獲得"
                         : "2回目で獲得"}
                   </b>
+                </p>
+                <p>
+                  BREAK II以降 · 毎Prestigeで全周回時間 ×
+                  {BALANCE.masteryContinuation.factor} /{" "}
+                  {Math.round((1 - BALANCE.masteryContinuation.factor) * 100)}
+                  %短縮
+                  <br />
+                  現在の累積倍率 ×{mastery(s.meta.prestigeCount).toPrecision(4)}
+                  <br />
+                  次Prestigeの累積倍率 ×
+                  {mastery(s.meta.prestigeCount + 1).toPrecision(4)}
                 </p>
               </div>
               <h3>次回の通常強化上限</h3>
@@ -570,7 +607,7 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               <dt>Total Play Time</dt>
               <dd>{duration(s.stats.activeSeconds)}</dd>
               <dt>LOOP MASTERY</dt>
-              <dd>×{mastery(s.meta.prestigeCount)}</dd>
+              <dd>×{mastery(s.meta.prestigeCount).toPrecision(4)}</dd>
               <dt>経路進捗</dt>
               <dd>
                 {s.run.routeClears} / {boundary(s.run.targetStage) + 1}

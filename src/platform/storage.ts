@@ -1,4 +1,4 @@
-import { decode, encode } from "../game/save";
+import { decode, encode, UNSUPPORTED_BALANCE_MESSAGE } from "../game/save";
 import { type GameState, initialState } from "../game/state";
 export const SAVE_KEYS = {
   current: "loop-breaker.current",
@@ -31,6 +31,7 @@ export function load(storage: StoragePort): LoadResult {
   }
   if (current === null && backup === null)
     return { state: initialState(), recovered: false, error: null, raw: null };
+  let balanceError: string | null = null;
   for (const [raw, recovered] of [
     [current, false],
     [backup, true],
@@ -38,7 +39,12 @@ export function load(storage: StoragePort): LoadResult {
     if (raw === null) continue;
     try {
       return { state: decode(raw), recovered, error: null, raw: null };
-    } catch {
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === UNSUPPORTED_BALANCE_MESSAGE
+      )
+        balanceError = error.message;
       /* Try backup without overwriting the corrupt data. */
     }
   }
@@ -46,6 +52,7 @@ export function load(storage: StoragePort): LoadResult {
     state: initialState(),
     recovered: false,
     error:
+      balanceError ??
       "Saveを復旧できません。元データをExportするか、Import / 新規開始を選んでください。",
     raw: current ?? backup,
   };

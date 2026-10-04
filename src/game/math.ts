@@ -16,7 +16,12 @@ export const stageAt = (s: GameState): number =>
   );
 export const requiredStage = (p: number): number =>
   BALANCE.stage.firstTarget + BALANCE.stage.step * Math.max(0, p - 2);
-export const mastery = (p: number): number => BALANCE.mastery[Math.min(2, p)];
+export const mastery = (p: number): Big =>
+  D(BALANCE.mastery[Math.min(2, p)]).mul(
+    D(BALANCE.masteryContinuation.factor).pow(
+      Math.max(0, p - BALANCE.masteryContinuation.after),
+    ),
+  );
 export function cap(id: UpgradeId, p: number): number {
   if (id === "atk") return BALANCE.limits.level;
   if (id === "delay")
@@ -62,7 +67,12 @@ export const hp = (stage: number): Big =>
     );
 export const fixedDelay = (s: GameState): Big =>
   D(BALANCE.delay.base)
-    .mul(D(BALANCE.delay.compression).pow(s.run.upgrades.delay))
+    .div(
+      D(BALANCE.delay.atk)
+        .pow(-s.run.upgrades.atk)
+        .add(D(BALANCE.delay.compression).pow(-s.run.upgrades.delay))
+        .sub(1),
+    )
     .mul(D(BALANCE.delay.tempo).pow(s.meta.upgrades.tempo));
 export const clearTime = (s: GameState, stage = stageAt(s)): Big =>
   hp(stage)

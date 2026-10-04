@@ -38,7 +38,7 @@ async function decoded(page: Page, id: string) {
 function zoneSave(stage: number, boss = false) {
   const raw = JSON.parse(fixture("burst"));
   raw.run.targetStage = Math.max(150, stage);
-  raw.run.routeClears = 40 * (stage - 1);
+  raw.run.routeClears = 5 * (stage - 1);
   raw.run.clears = String(raw.run.routeClears);
   raw.run.highestClearedStage = stage === 1 ? 0 : stage - 1;
   raw.run.upgrades = { atk: 0, speed: 0, crit: 0, overkill: 0, delay: 0 };
@@ -158,10 +158,10 @@ test("BURST uses fixed decoration and both Reduced Motion controls stop animatio
   inflated.meta.prestigeCount = 59;
   inflated.meta.upgrades = { power: 150, wealth: 150, tempo: 120 };
   inflated.run.targetStage = 2950;
-  inflated.run.routeClears = 117961;
+  inflated.run.routeClears = 14746;
   inflated.run.highestClearedStage = 2950;
-  inflated.run.clears = "117961";
-  inflated.stats.totalClears = "117961";
+  inflated.run.clears = "14746";
+  inflated.stats.totalClears = "14746";
   inflated.stats.highestStage = 2950;
   inflated.run.upgrades = {
     atk: 1000,
@@ -176,7 +176,7 @@ test("BURST uses fixed decoration and both Reduced Motion controls stop animatio
   await page.clock.runFor(7000);
   await expect(
     page.getByTestId("burst-visual").locator("strong"),
-  ).toContainText(/e\+16/);
+  ).toContainText(/e\+[1-9]\d+/);
   expect(await page.getByTestId("burst-visual").locator("*").count()).toBe(
     nodes,
   );

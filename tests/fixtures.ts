@@ -5,10 +5,10 @@ export function fixture(kind: "gold" | "prestige" | "burst" = "gold"): string {
   const s = initialState();
   s.run.gold = D(100);
   if (kind !== "gold") {
-    s.run.routeClears = 3961;
-    s.run.clears = D(3961);
+    s.run.routeClears = 496;
+    s.run.clears = D(496);
     s.run.highestClearedStage = 100;
-    s.stats.totalClears = D(3961);
+    s.stats.totalClears = D(496);
     s.stats.highestStage = 100;
     s.stats.totalGoldEarned = D(2500);
     s.run.upgrades = { atk: 19, speed: 1, crit: 1, overkill: 1, delay: 1 };

@@ -41,15 +41,15 @@ test("visual LOD and Reduced Motion follow time units without attack events", as
       ".slash-effect,.hero-art,.enemy-art{animation-delay:-0.45s!important;animation-play-state:paused!important;}",
   });
   const normalNodes = await scene.locator("*").count();
-  for (const [delay, lod, unit] of [
-    [1, "fast", "ms"],
-    [6, "ultra", "ms"],
-    [14, "burst", "μs"],
+  for (const [atk, delay, lod, unit] of [
+    [17, 1, "fast", "ms"],
+    [50, 6, "ultra", "ms"],
+    [80, 14, "burst", "μs"],
   ] as const) {
     const raw = JSON.parse(fixture("prestige"));
     raw.meta.prestigeCount = 4;
     raw.run.targetStage = 200;
-    raw.run.upgrades = { atk: 120, speed: 3, crit: 3, overkill: 2, delay };
+    raw.run.upgrades = { atk, speed: 3, crit: 3, overkill: 2, delay };
     raw.automation.atkEnabled = false;
     await importSave(page, JSON.stringify(raw));
     await expect(scene).toHaveAttribute("data-lod", lod);
@@ -89,20 +89,20 @@ test("million and trillion CLEAR scales keep DOM, React commits and network boun
   let requests = 0;
   page.on("request", () => requests++);
   const observations: number[] = [];
-  for (const [delay, tempo, minimum] of [
-    [22, 0, 1e6],
-    [30, 120, 1e12],
+  for (const [atk, delay, tempo, minimum] of [
+    [480, 22, 0, 1e6],
+    [1000, 30, 120, 1e12],
   ] as const) {
     const raw = JSON.parse(fixture("burst"));
     raw.meta.prestigeCount = 59;
     raw.meta.upgrades = { power: 150, wealth: 150, tempo };
     raw.run.targetStage = 2950;
-    raw.run.routeClears = 117961;
+    raw.run.routeClears = 14746;
     raw.run.highestClearedStage = 2950;
-    raw.run.clears = "117961";
-    raw.stats.totalClears = "117961";
+    raw.run.clears = "14746";
+    raw.stats.totalClears = "14746";
     raw.stats.highestStage = 2950;
-    raw.run.upgrades = { atk: 1000, speed: 8, crit: 8, overkill: 8, delay };
+    raw.run.upgrades = { atk, speed: 8, crit: 8, overkill: 8, delay };
     raw.automation.atkEnabled = false;
     raw.run.burst = { active: false, seconds: 0, clears: "0", gold: "0" };
     await importSave(page, JSON.stringify(raw));
@@ -152,7 +152,7 @@ test("million and trillion CLEAR scales keep DOM, React commits and network boun
     if (!path) throw new Error("Save export path missing");
     const { readFileSync } = await import("node:fs");
     expect(
-      Number(JSON.parse(readFileSync(path, "utf8")).run.clears) - 117961,
+      Number(JSON.parse(readFileSync(path, "utf8")).run.clears) - 14746,
     ).toBeGreaterThanOrEqual(minimum);
     await page.getByRole("button", { name: "閉じる", exact: true }).click();
   }

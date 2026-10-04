@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { advance } from "../src/game/advance";
 import { D } from "../src/game/number";
-import { decode, encode, migrate } from "../src/game/save";
+import {
+  decode,
+  encode,
+  migrate,
+  UNSUPPORTED_BALANCE_MESSAGE,
+} from "../src/game/save";
 import { initialState } from "../src/game/state";
 import { GameRuntime } from "../src/platform/runtime";
 import {
@@ -24,6 +29,16 @@ class MemoryStorage implements StoragePort {
   }
 }
 describe("Save validation and compact serialization", () => {
+  it.each(["prototype-2", "speed-3", "unknown-development"])(
+    "rejects unsupported balance %s without migration",
+    (version) => {
+      const raw = JSON.parse(fixture());
+      raw.balanceVersion = version;
+      expect(() => decode(JSON.stringify(raw))).toThrow(
+        UNSUPPORTED_BALANCE_MESSAGE,
+      );
+    },
+  );
   it("roundtrips phase, partial BURST, huge Gold, permanent data and settings", () => {
     const s = decode(fixture("burst"));
     s.run.gold = D("1e42");
@@ -110,6 +125,35 @@ describe("Save validation and compact serialization", () => {
   });
 });
 describe("storage and runtime", () => {
+  it("preserves unsupported Save until explicit new game and rejects its Import", () => {
+    const storage = new MemoryStorage();
+    const raw = JSON.parse(fixture());
+    raw.balanceVersion = "speed-3";
+    const text = JSON.stringify(raw);
+    storage.setItem(SAVE_KEYS.current, text);
+    const runtime = new GameRuntime(storage);
+    expect(runtime.getSnapshot().fatal).toBe(true);
+    expect(runtime.getSnapshot().message).toBe(UNSUPPORTED_BALANCE_MESSAGE);
+    runtime.tick();
+    runtime.save();
+    expect(storage.getItem(SAVE_KEYS.current)).toBe(text);
+    expect(runtime.exportSave()).toBe(text);
+    expect(() => runtime.importSave(text)).toThrow(UNSUPPORTED_BALANCE_MESSAGE);
+    runtime.newGame();
+    expect(runtime.getSnapshot().fatal).toBe(false);
+    expect(
+      decode(storage.getItem(SAVE_KEYS.current) ?? "").run.clears.eq(0),
+    ).toBe(true);
+  });
+  it("recovers current balance backup when current has an unsupported balance", () => {
+    const storage = new MemoryStorage();
+    const raw = JSON.parse(fixture());
+    raw.balanceVersion = "development-old";
+    storage.setItem(SAVE_KEYS.current, JSON.stringify(raw));
+    storage.setItem(SAVE_KEYS.backup, fixture());
+    expect(load(storage).recovered).toBe(true);
+    expect(load(storage).error).toBeNull();
+  });
   it("creates a current + previous valid backup and recovers corrupted current", () => {
     const storage = new MemoryStorage();
     persist(storage, initialState());

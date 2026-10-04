@@ -71,7 +71,7 @@ test("Pages base path loads metadata, assets, battle and persistent Save", async
   await page.clock.runFor(6000);
   await expect(page.getByTestId("clears")).toHaveText("1");
   await expect(page.getByTestId("gold")).toHaveText("10");
-  // The existing first ATK costs 100 Gold; earn enough RUNs without changing balance.
+  // The existing first ATK costs 35 Gold; earn enough RUNs without changing balance.
   await page.clock.runFor(50000);
   const savedClears = await page.getByTestId("clears").innerText();
   await page.getByTestId("buy-atk").click();

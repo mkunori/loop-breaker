@@ -1,0 +1,24 @@
+LOOP MASTERY: #1 x0.55; #2 cumulative x0.36; every Prestige after #2 x0.88.
+| Prestige # | Required Stage | Cycle seconds | SOUL earned | P/W/T at start | SOUL carry | Start sec/run | End sec/run | First BURST in cycle |
+|---:|---:|---:|---:|---|---:|---:|---:|---|
+| 1 | 100 | 432.15 | 4 | 0/0/0 | 0 | 5.0000 | 0.3322 | no |
+| 2 | 100 | 127.74 | 8 | 1/1/1 | 0 | 1.7616 | 0.0990 | no |
+| 3 | 100 | 830.00 | 4 | 2/2/2 | 0 | 0.8601 | 0.0010 | 830.00s / Stage 100 |
+First lifetime BURST: total active seconds 1389.89
+| 4 | 150 | 54.08 | 7 | 3/2/2 | 1 | 0.6377 | 0.0345 | no |
+| 5 | 200 | 48.62 | 11 | 3/3/2 | 5 | 0.5611 | 0.0299 | no |
+| 6 | 250 | 37.94 | 15 | 4/4/3 | 0 | 0.4089 | 0.0245 | no |
+| 7 | 300 | 36.72 | 20 | 4/4/4 | 5 | 0.3399 | 0.0342 | no |
+| 8 | 350 | 35.61 | 26 | 5/5/4 | 7 | 0.2680 | 0.0437 | no |
+| 9 | 400 | 40.86 | 32 | 6/5/5 | 1 | 0.2028 | 0.0789 | no |
+| 10 | 450 | 56.04 | 38 | 6/6/5 | 18 | 0.1785 | 0.1494 | no |
+| 11 | 500 | 90.12 | 44 | 7/6/6 | 2 | 0.1366 | 0.2934 | no |
+| 12 | 550 | 160.15 | 51 | 7/7/6 | 21 | 0.1202 | 0.5685 | no |
+First-cycle checkpoints: [(0.0, 1, 0, {'atk': 0, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, 0.0, 5.0), (60, 3, 13, {'atk': 3, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, 11.950999999999986, 3.4034754674648404), (120, 8, 35, {'atk': 6, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, 66.4933834879999, 2.354761935200427), (180, 14, 69, {'atk': 10, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, 78.00427256627201, 1.4692096087965105), (240, 25, 121, {'atk': 14, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, 83.27891686014549, 0.9459030966830839), (300, 40, 198, {'atk': 18, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, 47.86997645206872, 0.6273134989829233), (360, 62, 308, {'atk': 21, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, 267.2092561968512, 0.47285799484060687), (420, 92, 459, {'atk': 25, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, 27.50954806254356, 0.33028441155295474)]
+First purchase: 20.0
+First-cycle unlocks: {'speed': 28.78344827586207, 'crit': 79.325552099017, 'overkill': 129.2434610218862, 'delay': 180.56371707341287, 'auto': 238.53528339256172}
+First <1s: Cycle 1, cycle 232.00s, lifetime 232.00s, Stage 23
+First <0.1s: Cycle 2, cycle 126.00s, lifetime 558.15s, Stage 96
+First <0.01s: Cycle 3, cycle 148.00s, lifetime 707.89s, Stage 100
+First <0.001s: Cycle 3, cycle 830.00s, lifetime 1389.89s, Stage 100
+Normal levels at each finish: [{'atk': 25, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 29, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 90, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 35, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 39, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 43, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 45, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 48, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 49, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 51, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 52, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}, {'atk': 54, 'speed': 0, 'crit': 0, 'overkill': 0, 'delay': 0}]

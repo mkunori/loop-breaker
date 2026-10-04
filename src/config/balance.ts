@@ -1,5 +1,5 @@
 export const BALANCE = {
-  version: "speed-3",
+  version: "speed-4",
   hp: {
     normal: 30,
     boss: 120,
@@ -13,12 +13,13 @@ export const BALANCE = {
   critChance: 0.1,
   critMultiplier: 3,
   overkill: 0.15,
-  delay: { base: 1, compression: 0.6, tempo: 0.85 },
+  delay: { base: 1, compression: 0.6, tempo: 0.85, atk: 0.94 },
   gold: { base: 10, wealth: 0.55, stageStep: 0.0005, stageCap: 100 },
   mastery: [1, 0.55, 0.36] as const,
+  masteryContinuation: { after: 2, factor: 0.88 },
   caps: {
     delayFirst: 6,
-    delayStep: 2,
+    delayStep: 3,
     first: 1,
     speed: 8,
     crit: 8,
@@ -27,11 +28,11 @@ export const BALANCE = {
     cadence: 2,
   },
   upgrades: {
-    atk: { label: "ATK", base: 100, growth: 1.2, unlock: 0 },
-    speed: { label: "Attack Speed", base: 10, growth: 2.2, unlock: 20 },
-    crit: { label: "Critical", base: 10, growth: 2.2, unlock: 70 },
-    overkill: { label: "Overkill", base: 10, growth: 2.2, unlock: 140 },
-    delay: { label: "Route Compression", base: 100, growth: 1.8, unlock: 250 },
+    atk: { label: "ATK", base: 35, growth: 1.12, unlock: 0 },
+    speed: { label: "Attack Speed", base: 10, growth: 2.2, unlock: 6 },
+    crit: { label: "Critical", base: 10, growth: 2.2, unlock: 20 },
+    overkill: { label: "Overkill", base: 10, growth: 2.2, unlock: 40 },
+    delay: { label: "Route Compression", base: 2000, growth: 1.8, unlock: 70 },
   },
   soul: { base: 4, exponent: 1.5, secondBonus: 4, costGrowth: 1.7 },
   permanent: {
@@ -40,13 +41,13 @@ export const BALANCE = {
     tempo: { label: "TEMPO", base: 2 },
   },
   stage: {
-    numerator: 40,
+    numerator: 5,
     denominator: 1,
     firstTarget: 100,
     step: 50,
     deepen: 25,
   },
-  autoUnlock: 400,
+  autoUnlock: 120,
   autoInterval: 1,
   burst: { enter: 0.001, exit: 0.0011, window: 5 },
   limits: {
@@ -104,10 +105,13 @@ export function validateBalance(config = BALANCE): void {
     config.caps.cadence,
     config.caps.delayFirst,
     config.caps.delayStep,
+    config.masteryContinuation.after,
   ])
     if (!Number.isSafeInteger(n) || n < 1) fail();
   for (const n of [
     config.delay.compression,
+    config.delay.atk,
+    config.masteryContinuation.factor,
     config.delay.tempo,
     ...config.mastery,
   ])

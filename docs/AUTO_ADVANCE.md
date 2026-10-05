@@ -1,3 +1,5 @@
+> speed-4当時の記録。現行speed-5の深部HP・Save方針は[DEEP_HP_DESIGN](DEEP_HP_DESIGN.md)を参照。AUTO ADVANCEの仕様・式・schemaは同じ。旧Balance移行は行わない。
+
 # Issue #13: AUTO ADVANCE
 
 QoLのみ。初期5秒、全価格/強化/Unlock、Stage密度、Prestige条件、SOUL、MASTERY、HP曲線、BURST1ms/5秒window、Offlineなしの方針を変更しない。`src/config/balance.ts` と設計用Balance simulationは無変更。

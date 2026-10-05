@@ -29,3 +29,27 @@ export function fixture(kind: "gold" | "prestige" | "burst" = "gold"): string {
   }
   return encode(s, "2026-10-03T00:00:00.000Z");
 }
+
+// Recreates the reported speed-4 play state under the current test balance.
+// Not a production Save migration. Unspecified phase/reserve are zero.
+export function prestige17State() {
+  const s = initialState();
+  s.meta.prestigeCount = 17;
+  s.meta.upgrades = { power: 10, wealth: 9, tempo: 9 };
+  for (const id of Object.keys(
+    s.meta.unlocks,
+  ) as (keyof typeof s.meta.unlocks)[])
+    s.meta.unlocks[id] = true;
+  s.run.targetStage = 850;
+  s.run.routeClears = 4030;
+  s.run.highestClearedStage = 806;
+  s.run.clears = D(4030);
+  s.run.gold = D(6538);
+  s.run.upgrades = { atk: 55, speed: 8, crit: 8, overkill: 8, delay: 6 };
+  s.stats.totalClears = D(4030);
+  s.stats.highestStage = 806;
+  s.stats.totalGoldEarned = D(1e6);
+  s.automation.atkEnabled = true;
+  s.automation.autoAdvanceEnabled = true;
+  return s;
+}

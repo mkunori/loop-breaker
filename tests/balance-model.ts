@@ -18,9 +18,12 @@ export function playModel(
   let autoAt = 0;
   const milestones: Record<string, number> = {};
   const times: number[] = [];
+  const cyclesDetail = [];
   const checkpoints: Record<number, number> = {};
   for (let cycle = 0; cycle < cycles; cycle++) {
     let seconds = 0;
+    const startTime = clearTime(s).toNumber();
+    let cycleBurst: number | null = startTime < 0.001 ? 0 : null;
     while (
       (!canPrestige(s) ||
         (cycle === 2 && model !== "immediate" && burst === null)) &&
@@ -44,6 +47,7 @@ export function playModel(
       if (model !== "auto" || !s.meta.unlocks.autoAtk)
         s = command(s, { type: "buy", id: "atk", max: true }).state;
       const time = clearTime(s).toNumber();
+      if (cycleBurst === null && time < 0.001) cycleBurst = seconds;
       if (cycle === 0 && [60, 120, 180].includes(seconds))
         checkpoints[seconds] = time;
       for (const threshold of [1, 0.1, 0.01, 0.001])
@@ -54,6 +58,16 @@ export function playModel(
     if (!canPrestige(s))
       throw new Error("reference cycle did not reach target");
     times.push(seconds);
+    cyclesDetail.push({
+      prestigeCount: cycle,
+      requiredStage: s.run.targetStage,
+      seconds,
+      startTime,
+      endTime: clearTime(s).toNumber(),
+      soul: soulReward(s).toNumber(),
+      permanent: { ...s.meta.upgrades },
+      burstAt: cycleBurst,
+    });
     const expectedSoul = s.meta.soul.add(soulReward(s));
     s = command(s, { type: "prestige", expectedCount: cycle }).state;
     if (!s.meta.soul.eq(expectedSoul))
@@ -66,5 +80,13 @@ export function playModel(
       s = command(s, { type: "permanent", id }).state;
     }
   }
-  return { times, burst, autoAt, milestones, checkpoints, state: s };
+  return {
+    times,
+    burst,
+    autoAt,
+    milestones,
+    checkpoints,
+    cyclesDetail,
+    state: s,
+  };
 }

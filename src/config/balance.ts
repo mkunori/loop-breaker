@@ -1,12 +1,15 @@
 export const BALANCE = {
-  version: "speed-4",
+  version: "speed-5",
   hp: {
     normal: 30,
     boss: 120,
     normalCount: 4,
     growth: 1.002,
-    deepGrowth: 1.02,
-    deepStart: 100,
+    deepSegments: [
+      { start: 100, end: 700, growth: 1.02 },
+      { start: 700, end: 1000, growth: 1.005 },
+      { start: 1000, end: null, growth: 1.001 },
+    ],
   },
   damage: { base: 60, growth: 1.16, power: 0.7 },
   speedGrowth: 1.25,
@@ -75,7 +78,7 @@ export function validateBalance(config = BALANCE): void {
   numbers(config);
   for (const n of [
     config.hp.growth,
-    config.hp.deepGrowth,
+    ...config.hp.deepSegments.map((segment) => segment.growth),
     config.damage.growth,
     config.speedGrowth,
     config.soul.costGrowth,
@@ -95,7 +98,7 @@ export function validateBalance(config = BALANCE): void {
     if (n <= 0) fail();
   for (const n of [
     config.hp.normalCount,
-    config.hp.deepStart,
+    ...config.hp.deepSegments.map((segment) => segment.start),
     config.gold.stageCap,
     config.stage.denominator,
     config.stage.numerator,
@@ -108,6 +111,16 @@ export function validateBalance(config = BALANCE): void {
     config.masteryContinuation.after,
   ])
     if (!Number.isSafeInteger(n) || n < 1) fail();
+  for (const [i, segment] of config.hp.deepSegments.entries()) {
+    if (segment.end === null) {
+      if (i !== config.hp.deepSegments.length - 1) fail();
+    } else if (
+      !Number.isSafeInteger(segment.end) ||
+      segment.end <= segment.start ||
+      segment.end !== config.hp.deepSegments[i + 1]?.start
+    )
+      fail();
+  }
   for (const n of [
     config.delay.compression,
     config.delay.atk,

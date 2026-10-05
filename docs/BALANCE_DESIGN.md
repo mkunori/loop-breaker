@@ -1,11 +1,14 @@
-# LOOP BREAKER — バランス設計 v4 / speed-4
+# LOOP BREAKER — バランス設計 v5 / speed-5
 
-Issue #11の現行仕様。LOOP BREAKERは「巨大数を増やしながらClear Timeの桁を削っていくゲーム」。新規5秒RUNから秒→ms→μs→BURSTへ進む。[候補比較・互換性](BURST_15_DESIGN.md)、[Active結果](balance/issue-11-active.txt)、[Casual](balance/issue-11-casual.txt)、[AUTO Only](balance/issue-11-auto.txt)、`python docs/balance/simulate.py --check`を参照。旧prototype-2はgit履歴とIMPLEMENTATION_NOTESの過去記録に残る。
+Issue #15で深部HPのみ再調整。[候補比較・P30・実プレイ回帰](DEEP_HP_DESIGN.md)。他の設定はIssue #11仕様を維持。LOOP BREAKERは「巨大数を増やしながらClear Timeの桁を削っていくゲーム」。新規5秒RUNから秒→ms→μs→BURSTへ進む。[候補比較・互換性](BURST_15_DESIGN.md)、[Active結果](balance/issue-11-active.txt)、[Casual](balance/issue-11-casual.txt)、[AUTO Only](balance/issue-11-auto.txt)、`python docs/balance/simulate.py --check`を参照。旧prototype-2はgit履歴とIMPLEMENTATION_NOTESの過去記録に残る。
 
 ## 数式と設定
 
 ```text
-HP growth(s) = 1.002^(s−1) × 1.020^max(0,s−100)
+HP growth(s) = 1.002^(s−1)
+             × 1.020^min(max(s−100,0),600)
+             × 1.005^min(max(s−700,0),300)
+             × 1.001^max(s−1000,0)
 通常4体 = 各30 × growth(s)、Boss = 120 × growth(s)、合計240
 Damage = 60 × 1.16^ATK × (1 + .70 POWER)
 DPS = Damage × 1.25^Speed × (1 + .20 Crit)
@@ -56,7 +59,7 @@ Active Farm / Casual / AUTO Onlyは初回2回を攻略後Prestige、3Cycle目は
 | 10ms未満 | 累積576.06秒 |
 | 初1ms未満・BURST | 累積933.06秒 / Cycle3 Stage100 |
 
-AUTO解禁195.41秒。Casual初BURST1082.87秒、AUTO Only1389.89秒、Immediate PrestigeはCycle18 Stage187・累積1477.76秒。最初12Cycleの全モデルとImmediate20Cycleは[BURST_15_DESIGN](BURST_15_DESIGN.md)および[比較表](balance/issue-11-cycle-comparison.md)。深部HPにより同じCycle内で速度が再悪化することがある。Cycle18〜20の終盤は2.77/8.41/17.31sだが、各新Cycle開始は43.4/36.3/30.0msへ改善し、序盤にBURSTを再体験できる。農場育成か深部挑戦かを選べる。全インフレ帯の完成保証ではない。
+AUTO解禁195.41秒。Casual初BURST1082.87秒、AUTO Only1389.89秒は変更なし。Immediate Prestigeは深部緩和により旧1477.76秒→1276.04秒（21.27分）。P0〜14（Required<=700）の全Cycle時間は旧式と一致。P17の実プレイ回帰は458秒→68秒。P30までの結果は[DEEP_HP_DESIGN](DEEP_HP_DESIGN.md)。BのRequired攻略はP20が350.36秒、P25が401.76秒、P30が447.94秒で指数的な停滞を抑える。全インフレ帯の恒久的な横ばいは保証しない。
 
 ## 精度・互換性
 
@@ -64,4 +67,4 @@ Issue #13はQoLのみ。AUTO ADVANCE OFFなら以下のバランスと参照時�
 
 本体はBigと数式一括計算を維持。Stage密度は周期1で、幾何/等差数列と二分探索を既存モデルで継続する。表示丸めを計算に戻さない。Python参照だけCLEARを列挙する。
 
-Save Version1 / balanceVersion speed-4。正式リリースまではBalance間のSave互換性を保証しない。異なるbalanceVersionは明示的に拒否し、経路変換も暗黙の読替えも行わない。旧Saveの原文を残しExport可能にして、新規開始はユーザーの確認後のみ。現行版同士のSave / reload / Export / Importとcurrent / backupは維持。経路進行は実CLEAR以下を検証する。
+Save Version1 / balanceVersion speed-5。正式リリースまではBalance間のSave互換性を保証しない。異なるbalanceVersionは明示的に拒否し、経路変換も暗黙の読替えも行わない。旧Saveの原文を残しExport可能にして、新規開始はユーザーの確認後のみ。現行版同士のSave / reload / Export / Importとcurrent / backupは維持。経路進行は実CLEAR以下を検証する。

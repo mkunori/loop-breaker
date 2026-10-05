@@ -1,0 +1,1 @@
+Design checks passed: four policies, 12-31 cycles, 5s start, immediate BURST <=25min, SOUL ledger, late slowdown without reset regression.

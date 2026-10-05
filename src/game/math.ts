@@ -88,12 +88,22 @@ export const dps = (s: GameState): Big =>
     );
 export const overkill = (s: GameState): number =>
   1 + BALANCE.overkill * s.run.upgrades.overkill;
-export const hp = (stage: number): Big =>
-  D(BALANCE.hp.normal * BALANCE.hp.normalCount + BALANCE.hp.boss)
-    .mul(D(BALANCE.hp.growth).pow(stage - 1))
-    .mul(
-      D(BALANCE.hp.deepGrowth).pow(Math.max(0, stage - BALANCE.hp.deepStart)),
+export function hp(stage: number): Big {
+  let value = D(
+    BALANCE.hp.normal * BALANCE.hp.normalCount + BALANCE.hp.boss,
+  ).mul(D(BALANCE.hp.growth).pow(stage - 1));
+  for (const segment of BALANCE.hp.deepSegments) {
+    const steps = Math.max(
+      0,
+      Math.min(stage, segment.end ?? stage) - segment.start,
     );
+    // Keep exactly the legacy operations for Stage <=700, including pow(0).
+    // Later segments do not add rounding operations to unchanged early HP.
+    if (segment === BALANCE.hp.deepSegments[0] || steps > 0)
+      value = value.mul(D(segment.growth).pow(steps));
+  }
+  return value;
+}
 export const fixedDelay = (s: GameState): Big =>
   D(BALANCE.delay.base)
     .div(
@@ -189,7 +199,7 @@ function stageSums(
   const cuts = [
     ...new Set([
       from,
-      BALANCE.hp.deepStart + 1,
+      ...BALANCE.hp.deepSegments.map((segment) => segment.start + 1),
       BALANCE.gold.stageCap + 1,
       to + 1,
     ]),
@@ -202,7 +212,10 @@ function stageSums(
     offset: lo,
     h:
       BALANCE.hp.growth *
-      (lo > BALANCE.hp.deepStart ? BALANCE.hp.deepGrowth : 1),
+      (BALANCE.hp.deepSegments.find(
+        (segment) =>
+          lo > segment.start && (segment.end === null || lo <= segment.end),
+      )?.growth ?? 1),
     linear: lo <= BALANCE.gold.stageCap,
   }));
   for (const block of blocks) {

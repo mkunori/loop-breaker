@@ -1,3 +1,5 @@
+> speed-4当時の記録。現行speed-5の深部HP・Save方針は[DEEP_HP_DESIGN](DEEP_HP_DESIGN.md)を参照。AUTO ADVANCEの仕様・式・schemaは同じ。旧Balance移行は行わない。
+
 # Issue #11: 15分BURST / Quick Buy
 
 実装前にPythonで候補を比較し、PR #12レビューで4モデルまで拡張。初期5秒、1ms enter / 1.1ms exit、5秒window、HP・Gold・SOUL指数1.5・POWER/WEALTH/TEMPO効果を維持する。BREAK II以降のMASTERY継続短縮だけを今回のレビューで追加した。

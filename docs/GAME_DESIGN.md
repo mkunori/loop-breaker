@@ -82,4 +82,6 @@ Damage base60、待ち1秒、ATK価格100/1.2、Route価格100/1.8、Stage密度
 
 ATK価格35/1.12・Route価格2000/1.8・Stage密度5・Route上限6+3p。ATK単独でも固定待ちを圧縮する式を採用。常駐はATK+候補1つの名前/Lv/価格/短縮時間、詳細はシート、AUTO予約はシートのみ。[BURST_15_DESIGN](BURST_15_DESIGN.md)に購入モデルと比較理由を記録。Active Farm初Prestige5:54・初BURST累積15:33、Casual18:03、AUTO Only23:10。3Cycle目はStage100で初BURSTまで育成継続する参考方針。即Prestigeを毎回選ぶImmediateも継続MASTERYで24:38に初BURSTへ到達する。Cycle3以降・BURST未解禁ならPrestige画面に育成継続の選択肢を案内する。強制制限はない。
 
-正式リリースまではBalance間のSave互換性を保証しない。speed-4以外は明示的に拒否し、自動変換/wipeは行わない。旧SaveのExportと確認付き新規開始を用意する。現行版同士のSave往復・current/backupは維持する。Issue #9の互換記述は当時の記録であり現行方針ではない。
+正式リリースまではBalance間のSave互換性を保証しない。speed-5以外は明示的に拒否し、自動変換/wipeは行わない。旧SaveのExportと確認付き新規開始を用意する。現行版同士のSave往復・current/backupは維持する。Issue #9の互換記述は当時の記録であり現行方針ではない。
+
+Issue #15はStage701以降の追加HP成長のみ変更。Stage700以下、Required +50、MASTERY、恒久強化、AUTO ADVANCE、UIは維持。[詳細・検証](DEEP_HP_DESIGN.md)。

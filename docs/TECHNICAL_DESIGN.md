@@ -31,7 +31,7 @@ tests/                     # 純粋関数、Save fixture、統合、ブラウザ
 
 ## 2. 設定と状態
 
-balance.tsの1オブジェクトに以下を集中させる: HP内訳/初期成長1.002/Stage100超の追加成長1.020、攻撃/速度/Crit/Overkill/Delayの全係数、Gold/CLEARとStage倍率（増分.0005、上限+5%）、初期Damage60/固定待ち1秒/Route上限6+3p、5強化の価格とGrowth、Prestige回数別の上限解放式、解禁CLEAR、恒久価格と効果、LOOP MASTERYの回数/名称/累積倍率、SOUL式係数/指数1.5/2回目ボーナス、Stage境界の5/1、初期目標100/増分50、深化25、BURST閾値.001/復帰.0011/窓5秒、将来の周回率倍率（初期1）。balanceVersionはspeed-4。Prestige最低時間の設定は存在しない。UIから参照し、同じ数値を重複定義しない。
+balance.tsの1オブジェクトに以下を集中させる: HP内訳/初期成長1.002/追加成長3区間（101–700:1.020、701–1000:1.005、1001以降:1.001）、攻撃/速度/Crit/Overkill/Delayの全係数、Gold/CLEARとStage倍率（増分.0005、上限+5%）、初期Damage60/固定待ち1秒/Route上限6+3p、5強化の価格とGrowth、Prestige回数別の上限解放式、解禁CLEAR、恒久価格と効果、LOOP MASTERYの回数/名称/累積倍率、SOUL式係数/指数1.5/2回目ボーナス、Stage境界の5/1、初期目標100/増分50、深化25、BURST閾値.001/復帰.0011/窓5秒、将来の周回率倍率（初期1）。balanceVersionはspeed-5。Prestige最低時間の設定は存在しない。UIから参照し、同じ数値を重複定義しない。
 
 presentation.tsにはUI通知100ms、AUTO判断1秒、Save5秒、演出LODはcombatVisual.tsで斬撃上限4/秒、説明用桁数。AUTO間隔は収入に影響するため変更時はバランス検証も行う。設定検証で負数、成長係数1以下の価格、Crit率100%超、ゼロClearTime、整合しない上限を拒否する。
 
@@ -77,13 +77,13 @@ Best BURSTは完全な5秒窓だけ。Total Goldは支出前の獲得量、Faste
 
 ## 5. Stageが変わる区間の一括積分
 
-単に「5秒開始時のStageで全部計算」するとStage進行と報酬が不整合になる。初期から以下を採用する。capStageは現在目標（Required Stageまたは任意深化）、capに達した残時間は一定Stage式。HPとStage Goldの係数が変わるStage101を境に最大2ブロックへ分ける。
+単に「5秒開始時のStageで全部計算」するとStage進行と報酬が不整合になる。初期から以下を採用する。capStageは現在目標（Required Stageまたは任意深化）、capに達した残時間は一定Stage式。HP境界101/701/1001とStage Gold境界の和集合で最大4ブロックへ分ける（既定Gold境界101）。
 
 境界 `b(s)=5(s−1)`。整数routeClears nのStageは `min(capStage, 1+floor(n/5))`。Stage sに属するCLEAR数は `q(s)=b(s+1)−b(s)`、周期1の `[5]`。capStageは残CLEAR全て同Stageとなる。現在の未完了周を処理した後、整数周境界から計算する。
 
 未完了周の残時間よりelapsedが短ければphaseだけを進めて終了する。巨大総CLEARをStage算出のためnumberへ変換しない。経路カウンターは目標までの必要周だけを積分し、capでの大量周回はDecimalのまま集計する。
 
-一定能力・同HPブロックの `T(s)=A × h^(s−offset)+B`。Stage<=100はh=1.002/offset=1、Stage>=101はh=1.02204/offset=101で、Aにはブロック先頭HP×LOOP MASTERY/(DPS×OverkillFactor)を使う。B=LOOP MASTERY×FixedDelay。Stage i…jの全周に必要な時間は:
+一定能力・同HPブロックの `T(s)=A × h^(s−offset)+B`。Stage<=100はh=1.002/offset=1、Stage101–700はh=1.02204、Stage701–1000はh=1.00701、Stage1001以降はh=1.003002で、offsetは各ブロック先頭。Aにはブロック先頭HP×LOOP MASTERY/(DPS×OverkillFactor)を使う。B=LOOP MASTERY×FixedDelay。Stage i…jの全周に必要な時間は:
 
 ```text
 time(i..j) = A × sum(q(s) × h^(s−offset)) + B × sum(q(s))
@@ -96,9 +96,9 @@ Goldも周回を列挙しない。G0=10×WEALTH、Stage<=100は倍率 `a+b×s`�
 
 elapsed以内に完了する最後のStageを単調二分探索（Stage450なら最大9比較、保護上限1e9でも最大30比較）し、最後のStageの追加最大5周はfloor、残時間をphaseに戻す。到達capでは残り数百万〜1e12周も一定式1回。highestClearedStageは最後に完了した周のStageを用い、Stageに入っただけでは更新しない。
 
-初期実装では端Stageと完了周の境界を一つの探索にまとめ、必要な経路CLEAR境界を二分探索する。上限は約5×targetStageなので最大33比較（Stage450は最大12比較）。計算量は同じ対数で、目標到達後の大量CLEARには探索しない。HPの深層境界とGold上限を別々に変更できるよう、その境界の和集合で区間分割する。既定値は2ブロック、別の境界を設定した場合は最大3ブロックとなる。
+初期実装では端Stageと完了周の境界を一つの探索にまとめ、必要な経路CLEAR境界を二分探索する。上限は約5×targetStageなので最大33比較（Stage450は最大12比較）。計算量は同じ対数で、目標到達後の大量CLEARには探索しない。HPの深層境界とGold上限を別々に変更できるよう、その境界の和集合で区間分割する。既定値は4ブロック、Goldに別の境界を設定した場合は最大5ブロックとなる。
 
-これにより1区間の計算量は `O(2×1 log capStage)`、周回数に依存しない。Stage目標が増えても境界周期と式を保てば対数。新Stage特性を追加するなら特性が一定の区間に分け、区間数を小さく保つ。敵ごとの条件分岐を後から各周へ持ち込まない。
+これにより1区間の計算量は `O(4×1 log capStage)`、周回数に依存しない。Stage目標が増えても境界周期と式を保てば対数。新Stage特性を追加するなら特性が一定の区間に分け、区間数を小さく保つ。敵ごとの条件分岐を後から各周へ持ち込まない。
 
 開発時に少数周だけの逐次参照実装をテスト内に置き、Stage跨ぎ一括式と比較する。製品には参照ループを使わない。高周回時にStageを固定するため計算結果を近似する必要はない。
 
@@ -127,7 +127,7 @@ localStorageにJSONを保存。現在・前回正常Saveの2スロット、合�
 ```json
 {
   "saveVersion": 1,
-  "balanceVersion": "speed-4",
+  "balanceVersion": "speed-5",
   "savedAt": "2026-10-03T00:00:00.000Z",
   "run": {
     "stage": 1, "targetStage": 100,
@@ -166,9 +166,9 @@ Loadはcurrent検証→失敗ならbackup→両方失敗なら新規開始の選
 
 ## 8. Version / Migration
 
-Issue #13の同一Balance拡張: automation.autoAdvanceEnabledをbooleanで保存。欠損時false、型不正は拒否。saveVersion1 / balanceVersion speed-4のまま。旧Balance拒否は変更しない。Prestigeはautomation全体を保持する。集約進行は計算用の最終+25上限を使い、実際の最高CLEAR StageからTargetをO(1)で導出する。BURST退出探索も同じ上限を使う。CLEAR/Target比例loopやUI通知を追加しない。[AUTO_ADVANCE](AUTO_ADVANCE.md)に式・計算量・保護上限・テスト方針を記録。
+Issue #13の同一Balance拡張: automation.autoAdvanceEnabledをbooleanで保存。欠損時false、型不正は拒否。当時はsaveVersion1 / balanceVersion speed-4。Issue #15以降はspeed-5のみ受理し、同一Balanceの欠損false補完は継続。旧Balance拒否は変更しない。Prestigeはautomation全体を保持する。集約進行は計算用の最終+25上限を使い、実際の最高CLEAR StageからTargetをO(1)で導出する。BURST退出探索も同じ上限を使う。CLEAR/Target比例loopやUI通知を追加しない。[AUTO_ADVANCE](AUTO_ADVANCE.md)に式・計算量・保護上限・テスト方針を記録。
 
-saveVersionは構造変更、balanceVersionは式や価格変更。**正式リリースまではBalance間のSave互換性を保証しない。** schema v1、balanceVersion speed-4を維持し、異なるBalanceはdecode/Importで明示的に拒否する。prototype-2 / speed-3の経路変換を削除し、旧版の暗黙読替えをしない。将来のschema migration registryは残し、登録された純粋関数を順に適用して最後に全体検証する。今は架空のv0 migrationを実装しない。Migrationにclockやネットワークを使わない。
+saveVersionは構造変更、balanceVersionは式や価格変更。**正式リリースまではBalance間のSave互換性を保証しない。** schema v1を維持し、balanceVersion speed-5へ更新し、異なるBalanceはdecode/Importで明示的に拒否する。prototype-2 / speed-3の経路変換を削除し、旧版の暗黙読替えをしない。将来のschema migration registryは残し、登録された純粋関数を順に適用して最後に全体検証する。今は架空のv0 migrationを実装しない。Migrationにclockやネットワークを使わない。
 
 将来のschema変更では追加フィールドのdefault、削除、ID mappingを個別に設計する。装備個体や履歴へ変換しない。現行BalanceのStageはrun.routeClears/targetから再計算し、保存stageとの差があれば表示用stageを修復する。経路進行は0〜b(target)+1かつ総CLEAR以下を検証する。Balance間の変換や補償を汎用registryへ詰め込まない。
 
@@ -217,3 +217,5 @@ formatTimeはBigのままs/ms/μs/ns/ps表示。presentation LODは独立設定�
 ## Issue #11補足
 
 固定待ちはBigの指数2項を分母へ合算する .85^TEMPO / (.94^(-ATK)+.60^(-Route)−1)。全Lv0で1秒。MASTERYもBigの.88^max(0,p−2)を初期倍率へ乗算し、Numberアンダーフローを避ける。全時間積分へ同じ倍率を適用するためStage積分/二分探索/batchの構造変更は不要。Saveは現行Balanceのみ受理し、変換はしない。Quick Buyの候補は従来優先順・固定最大4件の探索。攻撃/CLEAR単位のUI処理は追加しない。[BURST_15_DESIGN](BURST_15_DESIGN.md)を参照。
+
+Issue #15: balanceVersion speed-5、schema Version1。speed-4 migrationなし。hp/stageSumsのみ3区間の有限式へ変更し、AUTO ADVANCE・binary search・BURSTは無変更。[DEEP_HP_DESIGN](DEEP_HP_DESIGN.md)。

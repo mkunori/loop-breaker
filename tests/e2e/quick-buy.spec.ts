@@ -117,7 +117,7 @@ test("current balance Save reload and Export / Import preserve progress", async 
   const path = await (await download).path();
   if (!path) throw new Error("Export missing");
   const save = JSON.parse(readFileSync(path, "utf8"));
-  expect(save.balanceVersion).toBe("speed-4");
+  expect(save.balanceVersion).toBe("speed-5");
   expect(save.saveVersion).toBe(1);
   expect(save.run.routeClears).toBe(496);
   expect(Number(save.run.clears)).toBe(496);
@@ -133,39 +133,44 @@ test("current balance Save reload and Export / Import preserve progress", async 
   await expect(page.getByTestId("stage")).toHaveText("100");
 });
 
-test("unsupported balance is not overwritten and can be explicitly replaced with a new game", async ({
-  page,
-}) => {
-  const raw = JSON.parse(fixture());
-  raw.balanceVersion = "development-old";
-  const text = JSON.stringify(raw);
-  await page.addInitScript((value) => {
-    if (!localStorage.getItem("test.seeded")) {
-      localStorage.setItem("loop-breaker.current", value);
-      localStorage.setItem("test.seeded", "1");
-    }
-  }, text);
-  await page.goto("./");
-  await expect(
-    page.getByText("開発版の仕様変更により旧Saveは利用できません。", {
-      exact: false,
-    }),
-  ).toBeVisible();
-  await page.reload();
-  expect(
-    await page.evaluate(() => localStorage.getItem("loop-breaker.current")),
-  ).toBe(text);
-  await page.getByRole("button", { name: "設定・Save" }).click();
-  await page.getByRole("button", { name: "新規開始", exact: true }).click();
-  await page
-    .getByRole("button", { name: "現在の進行をResetして新規開始", exact: true })
-    .click();
-  await expect(page.getByTestId("stage")).toHaveText("1");
-  expect(
-    JSON.parse(
-      (await page.evaluate(() =>
-        localStorage.getItem("loop-breaker.current"),
-      )) ?? "{}",
-    ).balanceVersion,
-  ).toBe("speed-4");
-});
+for (const version of ["development-old", "speed-3", "speed-4"]) {
+  test(`unsupported ${version} is not overwritten and can be explicitly replaced with a new game`, async ({
+    page,
+  }) => {
+    const raw = JSON.parse(fixture());
+    raw.balanceVersion = version;
+    const text = JSON.stringify(raw);
+    await page.addInitScript((value) => {
+      if (!localStorage.getItem("test.seeded")) {
+        localStorage.setItem("loop-breaker.current", value);
+        localStorage.setItem("test.seeded", "1");
+      }
+    }, text);
+    await page.goto("./");
+    await expect(
+      page.getByText("開発版の仕様変更により旧Saveは利用できません。", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await page.reload();
+    expect(
+      await page.evaluate(() => localStorage.getItem("loop-breaker.current")),
+    ).toBe(text);
+    await page.getByRole("button", { name: "設定・Save" }).click();
+    await page.getByRole("button", { name: "新規開始", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: "現在の進行をResetして新規開始",
+        exact: true,
+      })
+      .click();
+    await expect(page.getByTestId("stage")).toHaveText("1");
+    expect(
+      JSON.parse(
+        (await page.evaluate(() =>
+          localStorage.getItem("loop-breaker.current"),
+        )) ?? "{}",
+      ).balanceVersion,
+    ).toBe("speed-5");
+  });
+}

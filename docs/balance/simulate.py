@@ -16,7 +16,7 @@ CONFIG = {
     "growth": {"atk": 1.12, "speed": 2.2, "crit": 2.2, "overkill": 2.2, "delay": 1.8},
     "mastery": (1, .55, .36), "mastery_growth": .88,
     "hp_growth": 1.002,
-    "deep_hp_growth": 1.020,
+    "deep_segments": [(100, 700, 1.020), (700, 1000, 1.005), (1000, None, 1.001)],
     "stage_gold_step": .0005,
     "stage_gold_cap": 100,
     "soul_exponent": 1.5,
@@ -73,12 +73,17 @@ def stage_gold(stage):
     return 1 + CONFIG["stage_gold_step"] * min(stage - 1, CONFIG["stage_gold_cap"])
 
 
+def hp(stage):
+    value = 240 * CONFIG["hp_growth"] ** (stage - 1)
+    for start, end, growth in CONFIG["deep_segments"]:
+        value *= growth ** max(0, min(stage, end if end is not None else stage) - start)
+    return value
+
+
 def clear_time(stage, levels, meta):
     damage = CONFIG["damage_base"] * 1.16 ** levels["atk"] * (1 + .70 * meta.power)
     dps = damage * 1.25 ** levels["speed"] * (1 + .2 * levels["crit"])
-    hp = (240 * CONFIG["hp_growth"] ** (stage - 1)
-          * CONFIG["deep_hp_growth"] ** max(0, stage - 100))
-    combat = hp / (dps * (1 + .15 * levels["overkill"]))
+    combat = hp(stage) / (dps * (1 + .15 * levels["overkill"]))
     delay = CONFIG["delay_base"] * 1 / (.60 ** (-levels["delay"]) + CONFIG["atk_delay"] ** (-levels["atk"]) - 1) * .85 ** meta.tempo
     mastery = CONFIG["mastery"][min(meta.prestige_count, 2)] * CONFIG["mastery_growth"] ** max(0, meta.prestige_count-2)
     return mastery * (combat + delay)
@@ -241,7 +246,7 @@ def check_design():
     first = next(r for r in immediate if r.burst_at is not None)
     immediate_total = sum(r.seconds for r in immediate[:first.cycle-1]) + first.burst_at
     assert total < immediate_total and 1200 < immediate_total < 1500
-    assert immediate[19].seconds > immediate[17].seconds
+    assert immediate[19].seconds < 360
     assert all(after.start_time < before.start_time for before, after in zip(immediate, immediate[1:]))
     assert rows[0].milestones[1][0] < 180
     assert rows[11].seconds > rows[9].seconds
@@ -252,7 +257,10 @@ def check_design():
                         for axis in range(3)
                         for level in range(before.meta_start[axis], after.meta_start[axis]))
             assert before.soul_start + before.earned_soul == spent + after.soul_start
-    print("Design checks passed: four policies, 12-20 cycles, 5s start, immediate BURST <=25min, SOUL ledger, late slowdown without reset regression.")
+    long_term = simulate(31, normal_policy="immediate")
+    assert max(r.seconds for r in long_term[16:]) < 480
+    assert long_term[30].seconds / long_term[20].seconds < 1.3
+    print("Design checks passed: four policies, 12-31 cycles, 5s start, immediate BURST <=25min, SOUL ledger, late slowdown without reset regression.")
 
 
 if __name__ == "__main__":

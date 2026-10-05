@@ -44,7 +44,7 @@ npm run test:e2e
 Playwrightはbuild済みのアプリを320px・360px・390px・PC幅で確認します。Linuxでブラウザのシステム依存も必要な場合は `npx playwright install --with-deps chromium` を使用してください。GitHub ActionsはPRとmainへのpushで同じ検証を行います。フォーマットは `npm run format`。
 
 - [ゲーム仕様](docs/GAME_DESIGN.md): 周回・Stage・解禁・Prestige・UI
-- [バランス設計](docs/BALANCE_DESIGN.md): 数式・価格・12Cycleの参考進行
+- [バランス設計](docs/BALANCE_DESIGN.md): 数式・価格・P30までの参考進行
 - [技術設計](docs/TECHNICAL_DESIGN.md): 一括計算・Save/Migration・テスト
 - [初期実装の検証記録](docs/IMPLEMENTATION_NOTES.md): ファイル構成・仕様補足・検証結果・残課題
 - [Visual Design](docs/VISUAL_DESIGN.md): アート方向・Stage帯・モバイル優先事項
@@ -56,4 +56,7 @@ Playwrightはbuild済みのアプリを320px・360px・390px・PC幅で確認し
 ```sh
 python docs/balance/simulate.py
 python docs/balance/simulate.py --check
+python docs/balance/deep_hp.py --check
 ```
+
+[深部HP曲線の比較と実プレイ回帰](docs/DEEP_HP_DESIGN.md): Stage700以下を維持し、深部追加成長のみ段階的に緩和。

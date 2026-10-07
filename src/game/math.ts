@@ -15,7 +15,10 @@ export const stageAt = (s: GameState): number =>
       ),
   );
 export const requiredStage = (p: number): number =>
-  BALANCE.stage.firstTarget + BALANCE.stage.step * Math.max(0, p - 2);
+  Math.min(
+    BALANCE.stage.prestigeCap,
+    BALANCE.stage.firstTarget + BALANCE.stage.step * Math.max(0, p - 2),
+  );
 // The final reachable +25 target, preserving the current target's residue.
 export function autoAdvanceCeiling(s: GameState): number {
   return s.automation.autoAdvanceEnabled && s.meta.prestigeCount >= 3
@@ -45,10 +48,28 @@ export function autoAdvanceTarget(
   );
   return initialTarget + Math.min(steps, available) * BALANCE.stage.deepen;
 }
-export const mastery = (p: number): Big =>
+export const deepMasteryEarned = (highest: number): number =>
+  Math.floor(
+    Math.max(0, highest - BALANCE.stage.prestigeCap) / BALANCE.deepMastery.step,
+  );
+export const nextDeepMasteryStage = (level: number): number | null => {
+  const next =
+    BALANCE.stage.prestigeCap + BALANCE.deepMastery.step * (level + 1);
+  return next <= BALANCE.limits.stage ? next : null;
+};
+export const prestigeDeepMastery = (s: GameState): number =>
+  Math.max(
+    s.meta.deepMasteryLevel,
+    deepMasteryEarned(s.run.highestClearedStage),
+  );
+export const mastery = (p: number, deepLevel = 0): Big =>
   D(BALANCE.mastery[Math.min(2, p)]).mul(
     D(BALANCE.masteryContinuation.factor).pow(
-      Math.max(0, p - BALANCE.masteryContinuation.after),
+      Math.max(
+        0,
+        Math.min(p, BALANCE.masteryContinuation.until) -
+          BALANCE.masteryContinuation.after,
+      ) + (p >= BALANCE.masteryContinuation.until ? deepLevel : 0),
     ),
   );
 export function cap(id: UpgradeId, p: number): number {
@@ -117,7 +138,7 @@ export const clearTime = (s: GameState, stage = stageAt(s)): Big =>
   hp(stage)
     .div(dps(s).mul(overkill(s)))
     .add(fixedDelay(s))
-    .mul(mastery(s.meta.prestigeCount));
+    .mul(mastery(s.meta.prestigeCount, s.meta.deepMasteryLevel));
 export const stageGold = (stage: number): number =>
   1 + BALANCE.gold.stageStep * Math.min(stage - 1, BALANCE.gold.stageCap);
 export const goldPerClear = (s: GameState, stage = stageAt(s)): Big =>
@@ -257,7 +278,7 @@ function stageSums(
     time: weightedHp
       .div(dps(s).mul(overkill(s)))
       .add(fixedDelay(s).mul(count))
-      .mul(mastery(s.meta.prestigeCount)),
+      .mul(mastery(s.meta.prestigeCount, s.meta.deepMasteryLevel)),
     gold: weightedGold
       .mul(BALANCE.gold.base)
       .mul(1 + BALANCE.gold.wealth * s.meta.upgrades.wealth),

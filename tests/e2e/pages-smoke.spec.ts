@@ -13,6 +13,7 @@ test("Pages base path loads metadata, assets, battle and persistent Save", async
     if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`);
   });
   await page.clock.install();
+  await page.clock.pauseAt(new Date(Date.now() + 60000));
   const response = await page.goto("./");
   expect(response?.status()).toBe(200);
   const base = new URL(page.url());

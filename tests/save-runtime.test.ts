@@ -29,16 +29,19 @@ class MemoryStorage implements StoragePort {
   }
 }
 describe("Save validation and compact serialization", () => {
-  it.each(["prototype-2", "speed-3", "speed-4", "unknown-development"])(
-    "rejects unsupported balance %s without migration",
-    (version) => {
-      const raw = JSON.parse(fixture());
-      raw.balanceVersion = version;
-      expect(() => decode(JSON.stringify(raw))).toThrow(
-        UNSUPPORTED_BALANCE_MESSAGE,
-      );
-    },
-  );
+  it.each([
+    "prototype-2",
+    "speed-3",
+    "speed-4",
+    "speed-5",
+    "unknown-development",
+  ])("rejects unsupported balance %s without migration", (version) => {
+    const raw = JSON.parse(fixture());
+    raw.balanceVersion = version;
+    expect(() => decode(JSON.stringify(raw))).toThrow(
+      UNSUPPORTED_BALANCE_MESSAGE,
+    );
+  });
   it("roundtrips phase, partial BURST, huge Gold, permanent data and settings", () => {
     const s = decode(fixture("burst"));
     s.run.gold = D("1e42");
@@ -125,7 +128,7 @@ describe("Save validation and compact serialization", () => {
   });
 });
 describe("storage and runtime", () => {
-  it.each(["speed-3", "speed-4"])(
+  it.each(["speed-3", "speed-4", "speed-5"])(
     "preserves %s Save until explicit new game and rejects its Import",
     (version) => {
       const storage = new MemoryStorage();

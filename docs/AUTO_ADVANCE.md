@@ -1,4 +1,4 @@
-> speed-4当時の記録。現行speed-5の深部HP・Save方針は[DEEP_HP_DESIGN](DEEP_HP_DESIGN.md)を参照。AUTO ADVANCEの仕様・式・schemaは同じ。旧Balance移行は行わない。
+> speed-4当時の記録。現行speed-6のPrestige cap・Deep MASTERY・Save方針は[PRESTIGE_CAP_DESIGN](PRESTIGE_CAP_DESIGN.md)、維持した深部HPは[DEEP_HP_DESIGN](DEEP_HP_DESIGN.md)を参照。AUTO ADVANCEの仕様・式とsaveVersion1は維持。旧Balance移行は行わない。
 
 # Issue #13: AUTO ADVANCE
 

@@ -35,7 +35,7 @@ test("AUTO ADVANCE is outside Quick Buy, defaults OFF, roundtrips ON and survive
   await page.goto("./");
   await expect(page.getByLabel("AUTO ADVANCE", { exact: true })).toHaveCount(0);
   const raw = state();
-  delete raw.automation.autoAdvanceEnabled; // Existing same-balance speed-5 v1.
+  delete raw.automation.autoAdvanceEnabled; // Existing same-balance speed-6 v1.
   await importSave(page, JSON.stringify(raw));
   const toggle = page.getByLabel("AUTO ADVANCE", { exact: true });
   await expect(toggle).not.toBeChecked();

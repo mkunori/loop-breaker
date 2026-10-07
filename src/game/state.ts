@@ -22,6 +22,7 @@ export interface GameState {
   };
   meta: {
     prestigeCount: number;
+    deepMasteryLevel: number;
     soul: Big;
     upgrades: Record<PermanentId, number>;
     unlocks: Record<Exclude<UpgradeId, "atk"> | "autoAtk" | "burst", boolean>;
@@ -60,6 +61,7 @@ export function initialState(): GameState {
     },
     meta: {
       prestigeCount: 0,
+      deepMasteryLevel: 0,
       soul: D(0),
       upgrades: { power: 0, wealth: 0, tempo: 0 },
       unlocks: {

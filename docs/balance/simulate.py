@@ -20,6 +20,7 @@ CONFIG = {
     "stage_gold_step": .0005,
     "stage_gold_cap": 100,
     "soul_exponent": 1.5,
+    "prestige_cap": 800, "separate_mastery": True, "deep_interval": 50,
 }
 
 
@@ -30,6 +31,7 @@ class Meta:
     power: int = 0
     wealth: int = 0
     tempo: int = 0
+    deep_mastery: int = 0
 
 
 @dataclass
@@ -49,10 +51,12 @@ class Result:
     unlock_times: dict = field(default_factory=dict)
     milestones: dict = field(default_factory=dict)
     first_buy: float | None = None
+    reach800: float | None = None
 
 
 def target_stage(prestige_count):
-    return 100 + 50 * max(0, prestige_count - 2)
+    stage = 100 + 50 * max(0, prestige_count - 2)
+    return min(stage, CONFIG["prestige_cap"]) if CONFIG["prestige_cap"] else stage
 
 
 def boundary(stage):
@@ -80,13 +84,18 @@ def hp(stage):
     return value
 
 
+def mastery(meta):
+    steps = (14 + meta.deep_mastery if CONFIG["separate_mastery"] and meta.prestige_count >= 16
+             else max(0, meta.prestige_count - 2))
+    return CONFIG["mastery"][min(meta.prestige_count, 2)] * CONFIG["mastery_growth"] ** steps
+
+
 def clear_time(stage, levels, meta):
     damage = CONFIG["damage_base"] * 1.16 ** levels["atk"] * (1 + .70 * meta.power)
     dps = damage * 1.25 ** levels["speed"] * (1 + .2 * levels["crit"])
     combat = hp(stage) / (dps * (1 + .15 * levels["overkill"]))
     delay = CONFIG["delay_base"] * 1 / (.60 ** (-levels["delay"]) + CONFIG["atk_delay"] ** (-levels["atk"]) - 1) * .85 ** meta.tempo
-    mastery = CONFIG["mastery"][min(meta.prestige_count, 2)] * CONFIG["mastery_growth"] ** max(0, meta.prestige_count-2)
-    return mastery * (combat + delay)
+    return mastery(meta) * (combat + delay)
 
 
 def soul_reward(stage, prestige_count):
@@ -113,7 +122,7 @@ def spend_soul(meta, policy="balanced"):
         setattr(meta, name, getattr(meta, name) + 1)
 
 
-def simulate_cycle(meta, decision_interval=1, normal_policy="caps-first"):
+def simulate_cycle(meta, decision_interval=1, normal_policy="caps-first", target_override=None, fast=False):
     """1-second ATK decisions; casual non-ATK every 60 seconds.
 
     First two targets Prestige immediately. Third target farms until first
@@ -122,13 +131,16 @@ def simulate_cycle(meta, decision_interval=1, normal_policy="caps-first"):
     zero-reserve purchase models production AUTO, never non-ATK purchases.
     This is player behavior, not an automatic Prestige rule in the game.
     """
+    if fast and normal_policy != "immediate":
+        raise ValueError("fast comparison supports immediate purchases only")
     if not math.isfinite(decision_interval) or decision_interval <= 0:
         raise ValueError("decision_interval must be finite and positive")
     t = gold = phase = 0.0
     clears = 0
     levels = dict.fromkeys(CONFIG["base"], 0)
     cap = caps(meta.prestige_count)
-    target = target_stage(meta.prestige_count)
+    target = target_override or target_stage(meta.prestige_count)
+    reach800 = None
     required_clears = boundary(target) + 1
     start = clear_time(1, levels, meta)
     burst_at = 0.0 if start < CONFIG["burst_enter"] else None
@@ -138,7 +150,7 @@ def simulate_cycle(meta, decision_interval=1, normal_policy="caps-first"):
     unlock_times = {}
     milestones = {}
     next_decision = decision_interval
-    next_mark = 0.0
+    next_mark = math.inf if fast else 0.0
     farm = meta.prestige_count == 2 and normal_policy != "immediate"
     while clears < required_clears or (farm and burst_at is None):
         stage = min(target, 1 + math.floor(clears / CONFIG["route_density"]))
@@ -153,7 +165,7 @@ def simulate_cycle(meta, decision_interval=1, normal_policy="caps-first"):
             next_mark += 60
         clear_at = t + (1 - phase) * current_time
         event_at = min(clear_at, next_decision, next_mark)
-        if event_at > 7200:
+        if not fast and event_at > 7200:
             raise RuntimeError(f"Cycle {meta.prestige_count + 1} exceeded the 7200s calculation horizon; balance requires review")
         phase += (event_at - t) / current_time
         t = event_at
@@ -162,6 +174,8 @@ def simulate_cycle(meta, decision_interval=1, normal_policy="caps-first"):
             phase = 0.0
             clears += 1
             gold += 10 * (1 + .55 * meta.wealth) * stage_gold(stage)
+            if stage == 800 and reach800 is None:
+                reach800 = t
             for key, threshold in CONFIG["unlock"].items():
                 if clears >= threshold and key not in unlock_times:
                     unlock_times[key] = t
@@ -186,11 +200,16 @@ def simulate_cycle(meta, decision_interval=1, normal_policy="caps-first"):
                     first_buy = t
                 levels["atk"] += 1
             next_decision += decision_interval
+            if fast:
+                # No income before the next CLEAR, and MAX has exhausted all
+                # affordable choices. Skip empty decision timestamps only.
+                next_clear = t + (1 - phase) * clear_time(stage, levels, meta)
+                next_decision = max(next_decision, math.ceil(next_clear / decision_interval) * decision_interval)
     return Result(meta.prestige_count + 1, target, t,
                   soul_reward(target, meta.prestige_count),
                   (meta.power, meta.wealth, meta.tempo), meta.soul, start,
                   clear_time(target, levels, meta), burst_at, burst_stage,
-                  dict(levels), marks, unlock_times, milestones, first_buy)
+                  dict(levels), marks, unlock_times, milestones, first_buy, reach800)
 
 
 def simulate(cycles=10, decision_interval=1, normal_policy="caps-first", soul_policy="balanced"):
@@ -199,6 +218,8 @@ def simulate(cycles=10, decision_interval=1, normal_policy="caps-first", soul_po
     for _ in range(cycles):
         row = simulate_cycle(meta, decision_interval, normal_policy)
         results.append(row)
+        if CONFIG["separate_mastery"]:
+            meta.deep_mastery = max(meta.deep_mastery, max(0, (row.target_stage - 800) // CONFIG["deep_interval"]))
         meta.soul += row.earned_soul
         meta.prestige_count += 1
         spend_soul(meta, soul_policy)
@@ -206,7 +227,7 @@ def simulate(cycles=10, decision_interval=1, normal_policy="caps-first", soul_po
 
 
 def print_results(rows):
-    print(f"LOOP MASTERY: #1 x0.55; #2 cumulative x0.36; every Prestige after #2 x{CONFIG['mastery_growth']}.")
+    print("LOOP MASTERY: early unchanged; P16+ 14 continuation steps + acquired Deep levels.")
     print("| Prestige # | Required Stage | Cycle seconds | SOUL earned | P/W/T at start | SOUL carry | Start sec/run | End sec/run | First BURST in cycle |")
     print("|---:|---:|---:|---:|---|---:|---:|---:|---|")
     total = 0.0
@@ -247,7 +268,7 @@ def check_design():
     immediate_total = sum(r.seconds for r in immediate[:first.cycle-1]) + first.burst_at
     assert total < immediate_total and 1200 < immediate_total < 1500
     assert immediate[19].seconds < 360
-    assert all(after.start_time < before.start_time for before, after in zip(immediate, immediate[1:]))
+    assert all(after.start_time <= before.start_time for before, after in zip(immediate, immediate[1:]))
     assert rows[0].milestones[1][0] < 180
     assert rows[11].seconds > rows[9].seconds
     assert soul_reward(100, 0) == 4 and soul_reward(100, 1) == 8
@@ -271,7 +292,7 @@ if __name__ == "__main__":
     parser.add_argument("--soul-policy", choices=["balanced", "power", "wealth", "tempo"], default="balanced")
     parser.add_argument("--soul-exponent", type=float, default=CONFIG["soul_exponent"])
     parser.add_argument("--burst-enter", type=float, default=CONFIG["burst_enter"], help="compare .1 / .01 / .001 second boundaries")
-    parser.add_argument("--mastery-growth", type=float, default=CONFIG["mastery_growth"], help="every Prestige after #2 multiplies Clear Time by this factor")
+    parser.add_argument("--mastery-growth", type=float, default=CONFIG["mastery_growth"], help="continuation/Deep MASTERY multiplier; continuation freezes at P16")
     parser.add_argument("--check", action="store_true", help="verify the adopted design and SOUL ledger")
     args = parser.parse_args()
     if not 1 <= args.cycles <= 100:

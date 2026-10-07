@@ -22,6 +22,8 @@ import {
   hp,
   mastery,
   maxBuy,
+  nextDeepMasteryStage,
+  prestigeDeepMastery,
   price,
   requiredStage,
   soulPrice,
@@ -67,6 +69,8 @@ function beep(): void {
 export function App({ runtime }: { runtime: GameRuntime }) {
   const view = useSyncExternalStore(runtime.subscribe, runtime.getSnapshot),
     s = view.state;
+  const pendingDeepLevel = prestigeDeepMastery(s),
+    nextDeepStage = nextDeepMasteryStage(pendingDeepLevel);
   const [sheet, setSheet] = useState<Sheet>(null),
     [maxMode, setMaxMode] = useState(false);
   const [reserve, setReserve] = useState(scientific(s.automation.reserveGold)),
@@ -441,9 +445,17 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                 ATKとRouteは待ち時間を共同で圧縮します。目標Stage攻略後も育成を続けられます。Prestigeするか、今のCycleでBURSTを目指すかを選べます。
               </p>
               <p>
-                LOOP MASTERY ×{mastery(s.meta.prestigeCount).toPrecision(4)} ·
-                固定待ち{" "}
-                {formatTime(fixedDelay(s).mul(mastery(s.meta.prestigeCount)))}
+                LOOP MASTERY ×
+                {mastery(
+                  s.meta.prestigeCount,
+                  s.meta.deepMasteryLevel,
+                ).toPrecision(4)}{" "}
+                · 固定待ち{" "}
+                {formatTime(
+                  fixedDelay(s).mul(
+                    mastery(s.meta.prestigeCount, s.meta.deepMasteryLevel),
+                  ),
+                )}
               </p>
               {s.meta.unlocks.autoAtk && (
                 <fieldset>
@@ -492,13 +504,16 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                     : `Stage ${requiredStage(s.meta.prestigeCount)} CLEARでPrestige可能`}
                 </small>
               </div>
+              {canPrestige(s) && (
+                <p className="prestige-ready">PRESTIGE READY</p>
+              )}
               <p>
                 次Cycle目標: Stage {requiredStage(s.meta.prestigeCount + 1)}
               </p>
               {s.meta.prestigeCount >= 2 && !s.meta.unlocks.burst && (
                 <p>
-                  今のCycleでさらに圧縮するとBURSTを目指せます。Prestigeを続けてもLOOP
-                  MASTERYの継続短縮が育ちます。
+                  今のCycleでさらに圧縮するとBURSTを目指せます。Stage800
+                  cap以降は深部CLEARとPrestigeでDeep MASTERYを獲得できます。
                 </p>
               )}
               <h3>LOOP MASTERY</h3>
@@ -520,17 +535,50 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                   </b>
                 </p>
                 <p>
-                  BREAK II以降 · 毎Prestigeで全周回時間 ×
-                  {BALANCE.masteryContinuation.factor} /{" "}
-                  {Math.round((1 - BALANCE.masteryContinuation.factor) * 100)}
-                  %短縮
+                  {s.meta.prestigeCount < BALANCE.masteryContinuation.until
+                    ? `Stage800 cap到達まで、Prestigeで全周回時間 ×${BALANCE.masteryContinuation.factor} / 12%短縮`
+                    : "Stage800即PrestigeではMASTERY追加なし。深部milestoneをCLEARしてPrestigeすると次Cycleから短縮。"}
                   <br />
-                  現在の累積倍率 ×{mastery(s.meta.prestigeCount).toPrecision(4)}
+                  現在の累積倍率 ×
+                  {mastery(
+                    s.meta.prestigeCount,
+                    s.meta.deepMasteryLevel,
+                  ).toPrecision(4)}
                   <br />
                   次Prestigeの累積倍率 ×
-                  {mastery(s.meta.prestigeCount + 1).toPrecision(4)}
+                  {mastery(
+                    s.meta.prestigeCount + 1,
+                    prestigeDeepMastery(s),
+                  ).toPrecision(4)}
                 </p>
               </div>
+              {(s.meta.prestigeCount >= BALANCE.masteryContinuation.until ||
+                s.run.highestClearedStage >= BALANCE.stage.prestigeCap ||
+                s.meta.deepMasteryLevel > 0) && (
+                <div className="milestones" data-testid="deep-mastery">
+                  <h3>Deep MASTERY</h3>
+                  <p>Current Deep MASTERY Lv{s.meta.deepMasteryLevel}</p>
+                  <p>
+                    Next Deep MASTERY:{" "}
+                    {nextDeepStage === null
+                      ? "Stage保護上限に到達"
+                      : `Stage ${nextDeepStage} CLEAR`}
+                  </p>
+                  <p>
+                    {canPrestige(s) &&
+                    prestigeDeepMastery(s) > s.meta.deepMasteryLevel
+                      ? `Deep Break READY · PrestigeでDeep MASTERY +${prestigeDeepMastery(s) - s.meta.deepMasteryLevel} → Lv${prestigeDeepMastery(s)}`
+                      : "今回のDeep MASTERY追加なし"}
+                  </p>
+                  <p>
+                    獲得はPrestige確定時。{BALANCE.deepMastery.step}
+                    Stageごとに1Lv、同じmilestoneの再取得なし。
+                  </p>
+                  {s.meta.prestigeCount < BALANCE.masteryContinuation.until && (
+                    <p>獲得Lvの倍率はStage800 cap到達以降に適用されます。</p>
+                  )}
+                </div>
+              )}
               <h3>次回の通常強化上限</h3>
               <p>
                 {UPGRADE_IDS.filter((id) => id !== "atk")
@@ -543,11 +591,12 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               <p>
                 Reset: Gold・通常Lv・Stage・RUN進捗・Cycle時間
                 <br />
-                保持: SOUL・恒久Lv・解禁・AUTO・累積統計
+                保持: SOUL・恒久Lv・Deep MASTERY・解禁・AUTO・累積統計
               </p>
               <p>
                 直後の予測: {(() => {
                   const next = cloneState(s);
+                  next.meta.deepMasteryLevel = prestigeDeepMastery(s);
                   next.meta.prestigeCount++;
                   next.run.upgrades = {
                     atk: 0,
@@ -630,7 +679,13 @@ export function App({ runtime }: { runtime: GameRuntime }) {
               <dt>Total Play Time</dt>
               <dd>{duration(s.stats.activeSeconds)}</dd>
               <dt>LOOP MASTERY</dt>
-              <dd>×{mastery(s.meta.prestigeCount).toPrecision(4)}</dd>
+              <dd>
+                ×
+                {mastery(
+                  s.meta.prestigeCount,
+                  s.meta.deepMasteryLevel,
+                ).toPrecision(4)}
+              </dd>
               <dt>経路進捗</dt>
               <dd>
                 {s.run.routeClears} / {boundary(s.run.targetStage) + 1}

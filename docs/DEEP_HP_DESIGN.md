@@ -1,5 +1,7 @@
 # 深部HP曲線 / Issue #15 / speed-5
 
+この文書はIssue #15 / speed-5のHP比較記録です。現行speed-6はHPを完全維持し、Required/MASTERYだけ変更します。[最新Prestige設計・回帰](PRESTIGE_CAP_DESIGN.md)。歴史的P17の68秒に対し、現行MASTERYで同fixtureは77秒です。
+
 変更はStage701以降の追加HP成長だけ。初期5秒、Upgrade・解禁・Gold・Stage密度、Required Stage +50、SOUL指数1.5、恒久強化、MASTERY ×0.88、BURST 1ms / 5秒窓、AUTO ADVANCEは維持する。UI追加はない。
 
 ## 候補比較と採用

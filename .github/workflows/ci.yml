@@ -26,6 +26,7 @@ jobs:
         run: |
           python docs/balance/simulate.py --check
           python docs/balance/deep_hp.py --check
+          python docs/balance/prestige_cap.py --check
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

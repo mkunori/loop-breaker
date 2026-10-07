@@ -7,6 +7,7 @@ import {
   canPrestige,
   cap,
   maxBuy,
+  prestigeDeepMastery,
   price,
   requiredStage,
   soulPrice,
@@ -49,11 +50,15 @@ export function command(
   } else if (cmd.type === "prestige") {
     if (cmd.expectedCount !== s.meta.prestigeCount || !canPrestige(s))
       return { state: s, events };
+    if (s.meta.prestigeCount >= BALANCE.limits.prestige)
+      throw new Error("Prestige回数保護限界に達しました");
+    const deepBefore = s.meta.deepMasteryLevel;
     const next = requiredStage(s.meta.prestigeCount + 1);
     if (next > BALANCE.limits.stage)
       throw new Error("Stage保護限界に達しました");
     closeBurst(s, true, events);
     s.meta.soul = s.meta.soul.add(soulReward(s));
+    s.meta.deepMasteryLevel = prestigeDeepMastery(s);
     s.meta.prestigeCount++;
     s.run = initialState().run;
     s.run.targetStage = next;
@@ -62,7 +67,11 @@ export function command(
       label:
         s.meta.prestigeCount <= 2
           ? `LOOP MASTERY / BREAK ${s.meta.prestigeCount === 1 ? "I" : "II"}`
-          : "通常強化の上限アップ / LOOP MASTERY 継続短縮",
+          : s.meta.prestigeCount <= BALANCE.masteryContinuation.until
+            ? "通常強化の上限アップ / LOOP MASTERY 継続短縮"
+            : s.meta.deepMasteryLevel > deepBefore
+              ? `Deep MASTERY +${s.meta.deepMasteryLevel - deepBefore} / Lv${s.meta.deepMasteryLevel}`
+              : "Prestige / MASTERY追加なし",
     });
   } else if (cmd.type === "deepen") {
     if (s.automation.autoAdvanceEnabled || !canDeepen(s))

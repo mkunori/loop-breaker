@@ -48,6 +48,8 @@ def first_burst(rows):
 
 
 def report(check=False):
+    # Historical Issue15 speed-5 HP comparison, independent of current cap.
+    model.CONFIG.update(prestige_cap=None, separate_mastery=False)
     reports = {}
     print("Fixture: P17, Stage807 -> first Stage850 CLEAR, Gold6538, phase0, AUTO ATK ON, AUTO ADVANCE ON, reserve0.")
     print("| Curve | AUTO fixture seconds | ATK finish | No purchases seconds | HP701 | HP850 | HP1000 | HP1500 |")

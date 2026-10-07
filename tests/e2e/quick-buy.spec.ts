@@ -117,7 +117,7 @@ test("current balance Save reload and Export / Import preserve progress", async 
   const path = await (await download).path();
   if (!path) throw new Error("Export missing");
   const save = JSON.parse(readFileSync(path, "utf8"));
-  expect(save.balanceVersion).toBe("speed-5");
+  expect(save.balanceVersion).toBe("speed-6");
   expect(save.saveVersion).toBe(1);
   expect(save.run.routeClears).toBe(496);
   expect(Number(save.run.clears)).toBe(496);
@@ -133,7 +133,7 @@ test("current balance Save reload and Export / Import preserve progress", async 
   await expect(page.getByTestId("stage")).toHaveText("100");
 });
 
-for (const version of ["development-old", "speed-3", "speed-4"]) {
+for (const version of ["development-old", "speed-3", "speed-4", "speed-5"]) {
   test(`unsupported ${version} is not overwritten and can be explicitly replaced with a new game`, async ({
     page,
   }) => {
@@ -171,6 +171,6 @@ for (const version of ["development-old", "speed-3", "speed-4"]) {
           localStorage.getItem("loop-breaker.current"),
         )) ?? "{}",
       ).balanceVersion,
-    ).toBe("speed-5");
+    ).toBe("speed-6");
   });
 }

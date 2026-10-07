@@ -83,9 +83,16 @@ export function decode(text: string): GameState {
   s.meta.prestigeCount = numeric(
     m.prestigeCount,
     0,
+    BALANCE.limits.prestige,
+    true,
+  );
+  s.meta.deepMasteryLevel = numeric(
+    m.deepMasteryLevel,
+    0,
     Math.floor(
-      (BALANCE.limits.stage - BALANCE.stage.firstTarget) / BALANCE.stage.step,
-    ) + 2,
+      (BALANCE.limits.stage - BALANCE.stage.prestigeCap) /
+        BALANCE.deepMastery.step,
+    ),
     true,
   );
   s.meta.soul = big(m.soul);

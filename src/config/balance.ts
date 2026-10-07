@@ -1,5 +1,5 @@
 export const BALANCE = {
-  version: "speed-5",
+  version: "speed-6",
   hp: {
     normal: 30,
     boss: 120,
@@ -19,7 +19,8 @@ export const BALANCE = {
   delay: { base: 1, compression: 0.6, tempo: 0.85, atk: 0.94 },
   gold: { base: 10, wealth: 0.55, stageStep: 0.0005, stageCap: 100 },
   mastery: [1, 0.55, 0.36] as const,
-  masteryContinuation: { after: 2, factor: 0.88 },
+  masteryContinuation: { after: 2, until: 16, factor: 0.88 },
+  deepMastery: { step: 50 },
   caps: {
     delayFirst: 6,
     delayStep: 3,
@@ -47,6 +48,7 @@ export const BALANCE = {
     numerator: 5,
     denominator: 1,
     firstTarget: 100,
+    prestigeCap: 800,
     step: 50,
     deepen: 25,
   },
@@ -55,6 +57,7 @@ export const BALANCE = {
   burst: { enter: 0.001, exit: 0.0011, window: 5 },
   limits: {
     level: 1e6,
+    prestige: 1e9,
     stage: 1e9,
     exponent: 1e9,
     exactCount: Number.MAX_SAFE_INTEGER,
@@ -109,6 +112,10 @@ export function validateBalance(config = BALANCE): void {
     config.caps.delayFirst,
     config.caps.delayStep,
     config.masteryContinuation.after,
+    config.masteryContinuation.until,
+    config.deepMastery.step,
+    config.stage.prestigeCap,
+    config.limits.prestige,
   ])
     if (!Number.isSafeInteger(n) || n < 1) fail();
   for (const [i, segment] of config.hp.deepSegments.entries()) {
@@ -130,6 +137,10 @@ export function validateBalance(config = BALANCE): void {
   ])
     if (n <= 0 || n > 1) fail();
   if (
+    config.masteryContinuation.until <= config.masteryContinuation.after ||
+    config.stage.prestigeCap !==
+      config.stage.firstTarget +
+        config.stage.step * (config.masteryContinuation.until - 2) ||
     config.critChance * config.caps.crit > 1 ||
     config.critMultiplier < 1 ||
     config.burst.exit <= config.burst.enter ||

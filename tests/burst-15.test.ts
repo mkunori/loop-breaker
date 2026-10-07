@@ -49,17 +49,19 @@ describe("15-minute BURST", () => {
 
 describe("Immediate Prestige", () => {
   it("reaches BURST with immediate resets without exponential late stagnation", () => {
-    const result = playModel("immediate", 31);
+    const result = playModel("immediate", 51);
     console.log("Immediate Prestige:", result);
     expect(result.burst).toBeGreaterThan(933);
     expect(result.burst).toBeGreaterThan(1200);
     expect(result.burst).toBeLessThan(1500);
     expect(result.times[11]).toBeGreaterThan(result.times[9]);
-    expect(Math.max(...result.times.slice(16))).toBeLessThan(480);
+    expect(Math.max(...result.times.slice(20))).toBeLessThan(240);
+    expect(Math.min(...result.times.slice(20))).toBeGreaterThan(60);
+    expect(result.state.meta.deepMasteryLevel).toBe(0);
     expect(result.times[30] / result.times[20]).toBeLessThan(1.3);
     const reference = [
       354.03, 102.03, 45.74, 45.91, 41.41, 31.89, 27.85, 25.16, 22.61, 22.9,
-      23.15, 25.16, 41.4, 55.76, 86.64, 139.42, 178.96, 196.57, 327.34, 355.25,
+      23.15, 25.16, 41.4, 55.76, 86.64, 139.42, 178.96,
     ];
     // Stage<=700 matches the legacy curve; deeper references use Candidate B.
     reference.forEach((t, i) => {

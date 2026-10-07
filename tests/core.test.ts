@@ -51,7 +51,7 @@ describe("balance math", () => {
     almost(before.sub(math.clearTime(s)), 0.141);
     s.meta.prestigeCount = 2;
     almost(math.clearTime(s), before.sub(0.141).mul(0.36).toNumber());
-    almost(math.mastery(20), 0.36 * 0.88 ** 18);
+    almost(math.mastery(20), 0.36 * 0.88 ** 14);
   });
   it("defines caps and stage boundaries precisely", () => {
     expect(
@@ -75,7 +75,7 @@ describe("balance math", () => {
       expect(math.stageAt(s)).toBe(expected);
     }
     expect(math.requiredStage(3)).toBe(150);
-    expect(math.requiredStage(30)).toBe(1500);
+    expect(math.requiredStage(30)).toBe(800);
     expect(math.stageGold(1)).toBe(1);
     expect(math.stageGold(100)).toBe(1.0495);
     expect(math.stageGold(100000)).toBe(1.05);

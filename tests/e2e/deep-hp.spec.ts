@@ -26,12 +26,12 @@ test("reported P17 state reaches required Stage850 in under two minutes", async 
     .click();
   await expect(page.getByTestId("stage")).toHaveText("807");
   await expect(page.getByLabel("AUTO ADVANCE", { exact: true })).toBeChecked();
-  await page.clock.runFor(76000);
+  await page.clock.runFor(85000);
   const saved = JSON.parse(
     (await page.evaluate(() => localStorage.getItem("loop-breaker.current"))) ??
       "{}",
   );
-  expect(saved.balanceVersion).toBe("speed-5");
+  expect(saved.balanceVersion).toBe("speed-6");
   expect(saved.run.highestClearedStage).toBeGreaterThanOrEqual(850);
   expect(saved.run.targetStage).toBeGreaterThanOrEqual(875);
   expect(saved.meta.prestigeCount).toBe(17);

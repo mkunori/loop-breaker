@@ -9,6 +9,7 @@ import {
   deepMasteryEarned,
   mastery,
   nextDeepMasteryStage,
+  prestigeDeepMastery,
   requiredStage,
   soulReward,
 } from "../src/game/math";
@@ -87,6 +88,23 @@ describe("Prestige cap and Deep MASTERY", () => {
         ).toBeCloseTo(0.88 ** earned, 12);
         expect(next.meta.soul.eq(soulReward(s))).toBe(true);
       }
+    },
+  );
+  it.each([
+    [0, 800, 850],
+    [0, 849, 850],
+    [0, 850, 900],
+    [0, 899, 900],
+    [0, 900, 950],
+    [0, 950, 1000],
+    [3, 950, 1000],
+    [0, BALANCE.limits.stage, null],
+  ])(
+    "current Lv%s / highest%s previews next milestone%s",
+    (level, highest, next) => {
+      const state = cleared(16, highest, level);
+      expect(nextDeepMasteryStage(prestigeDeepMastery(state))).toBe(next);
+      expect(state.meta.deepMasteryLevel).toBe(level);
     },
   );
   it("P15->16 shortens once; P16->17 at800 adds no mastery", () => {

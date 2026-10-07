@@ -69,6 +69,8 @@ function beep(): void {
 export function App({ runtime }: { runtime: GameRuntime }) {
   const view = useSyncExternalStore(runtime.subscribe, runtime.getSnapshot),
     s = view.state;
+  const pendingDeepLevel = prestigeDeepMastery(s),
+    nextDeepStage = nextDeepMasteryStage(pendingDeepLevel);
   const [sheet, setSheet] = useState<Sheet>(null),
     [maxMode, setMaxMode] = useState(false);
   const [reserve, setReserve] = useState(scientific(s.automation.reserveGold)),
@@ -558,9 +560,9 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                   <p>Current Deep MASTERY Lv{s.meta.deepMasteryLevel}</p>
                   <p>
                     Next Deep MASTERY:{" "}
-                    {nextDeepMasteryStage(s.meta.deepMasteryLevel) === null
+                    {nextDeepStage === null
                       ? "Stage保護上限に到達"
-                      : `Stage ${nextDeepMasteryStage(s.meta.deepMasteryLevel)} CLEAR`}
+                      : `Stage ${nextDeepStage} CLEAR`}
                   </p>
                   <p>
                     {canPrestige(s) &&

@@ -56,7 +56,7 @@ POWER / WEALTH / TEMPOはIssueの効果・価格を採用。恒久強化はSOUL�
 
 **LOOP MASTERY（仮称）**は「Prestigeで周回の仕組みそのものを圧縮する」明示的なマイルストーン。初回PrestigeでBREAK I、2回目でBREAK IIを自動獲得し、全RUN時間の倍率が1→0.55→0.36となる。第4のSOUL購入系統にはしない。
 
-Prestige画面にBREAK I / IIの累積倍率1→0.55→0.36を表示し、乗算せず置き換える。P16に至るまでは従来の継続×0.88を維持し、P16以降は継続14段を固定する。その後の通常PrestigeだけではMASTERYは増えない。Deep MASTERYはStage850から50Stageごとの一意な最高攻略記録で、Prestige確定時に `max(既存Lv, floor(max(0, highestClearedStage−800)/50))` を付与する。CLEAR直後には倍率を変えない。P16以降の倍率は `.36 × .88^(14 + deepMasteryLevel)`。任意の早期Deep攻略も確定時に記録するが、倍率への適用はP16以降。Stage800以降の同じシートでPRESTIGE READY、SOUL、現在Deep Lv、次milestone、今回の追加Lv、現在/次倍率を確認できる。Stage800即Prestigeでは追加なしと明示する。獲得済み効果はUPGRADES/Statsでも確認できる。
+Prestige画面にBREAK I / IIの累積倍率1→0.55→0.36を表示し、乗算せず置き換える。P16に至るまでは従来の継続×0.88を維持し、P16以降は継続14段を固定する。その後の通常PrestigeだけではMASTERYは増えない。Deep MASTERYはStage850から50Stageごとの一意な最高攻略記録で、Prestige確定時に `max(既存Lv, floor(max(0, highestClearedStage−800)/50))` を付与する。CLEAR直後には倍率を変えない。P16以降の倍率は `.36 × .88^(14 + deepMasteryLevel)`。任意の早期Deep攻略も確定時に記録するが、倍率への適用はP16以降。Stage800以降の同じシートでPRESTIGE READY、SOUL、現在Deep Lv、今回Prestige予定Lvを基準にした次milestone、今回の追加Lv、現在/次倍率を確認できる。Stage800即Prestigeでは追加なしと明示する。獲得済み効果はUPGRADES/Statsでも確認できる。
 
 ## 5. 通常表示からBURSTへ
 

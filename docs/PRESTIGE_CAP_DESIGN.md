@@ -12,7 +12,8 @@ mastery(p<16)    = [1,.55,.36][min(2,p)] × .88^max(0,p−2)
 mastery(p>=16)   = .36 × .88^(14 + deepMasteryLevel)
 earned(highest)  = floor(max(0,highestClearedStage−800)/50)
 Prestige確定時: deepMasteryLevel = max(existing,earned)
-next milestone  = 800 + 50 (deepMasteryLevel+1)
+pendingDeepLevel = max(existing,earned)
+next milestone  = 800 + 50 (pendingDeepLevel+1)
 ```
 
 | 状態 | Required | 継続段数 | Deep0の倍率 |
@@ -121,8 +122,10 @@ Required cap導入でStage保護上限とPrestige回数が連動しなくなる�
 
 ## 検証
 
-unit/integration **131件**、Playwright **96件**。P15→16→17、Stage799/800/801、Deep849/850/899/900/950、複数/再取得/CLEAR直後/Prestige直後/Save reload、巨大Deep Lv・CLEAR、cap後Prestige READY保持、speed-5拒否と原文保持を自動確認。320/360/390/PC、Reduced Motion、横スクロールなし、pageerrorなし、Quick Buy191px、巨大Target時DOM固定とReact更新上限・通信非比例も既存テストを維持。lint/typecheck/build、simulate.py --check、deep_hp.py --check、prestige_cap.py --checkを実行する。deep_hp.pyはIssue #15のspeed-5比較条件を明示固定し歴史的結果も再現する。
+unit/integration **139件**、Playwright **96件**。P15→16→17、Stage799/800/801、Deep849/850/899/900/950、複数/再取得/CLEAR直後/Prestige直後/Save reload、巨大Deep Lv・CLEAR、cap後Prestige READY保持、speed-5拒否と原文保持を自動確認。320/360/390/PC、Reduced Motion、横スクロールなし、pageerrorなし、Quick Buy191px、巨大Target時DOM固定とReact更新上限・通信非比例も既存テストを維持。lint/typecheck/build、simulate.py --check、deep_hp.py --check、prestige_cap.py --checkを実行する。deep_hp.pyはIssue #15のspeed-5比較条件を明示固定し歴史的結果も再現する。
 
 GitHub Actionsのverifyへprestige_cap.py --checkを追加。PRではdeploy skipped、merge/本番公開はレビュー後の別指示。iOS Safari実機とP50以降の長期テンポは未確認。
 
 [320px Prestige sheetレビュー画像](review/issue-17/deep-mastery-320.png)。画像はE2Eの独立Save contextでLv3確定後を撮影。
+
+PR #18レビュー修正: Next Deep MASTERYは今回Prestigeで確定する予定Lvを基準に表示する。確定Lv0/最高950ならCurrent Lv0・獲得予定+3→Lv3・次Stage1000を同時表示し、攻略済み850を再提示しない。800/849/850/899/900/950・既得Lv3・Stage保護限界をテストする。Current Lvは確定値のまま、獲得タイミング/計算/Save/Balanceは変更しない。

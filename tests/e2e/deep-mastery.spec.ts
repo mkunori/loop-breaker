@@ -53,6 +53,7 @@ test("Prestige sheet separates escape from Deep rewards, applies only on reset a
   await expect(page.getByText("PRESTIGE READY", { exact: true })).toBeVisible();
   await expect(panel).toContainText("Current Deep MASTERY Lv0");
   await expect(panel).toContainText("Deep MASTERY +3 → Lv3");
+  await expect(panel).toContainText("Next Deep MASTERY: Stage 1000 CLEAR");
   await expect(page.getByRole("dialog")).toContainText(
     "現在の累積倍率 ×0.06013",
   );

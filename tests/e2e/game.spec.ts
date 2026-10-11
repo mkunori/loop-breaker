@@ -58,7 +58,10 @@ test("supports purchases, all upgrades, mobile fit and Save export/import", asyn
   await page.getByTestId("buy-atk").click();
   await expect(page.getByTestId("buy-atk")).toContainText("Lv 1");
   await page.getByRole("button", { name: "UPGRADES" }).click();
-  await expect(page.getByTestId("buy-speed")).toContainText("6 CLEARで解禁");
+  await expect(page.getByTestId("buy-speed")).toHaveCount(0);
+  await expect(page.getByTestId("passive-abilities")).toContainText(
+    "6 / 20 / 40 CLEAR",
+  );
   await page.getByRole("button", { name: "閉じる", exact: true }).click();
   await expect(page.getByTestId("clear-time")).toContainText("4.39");
   expect(
@@ -99,7 +102,8 @@ test("Prestige, SOUL upgrades, mastery and AUTO settings work together", async (
     await page.getByRole("button", { name: new RegExp(`${id} Lv0`) }).click();
   await page.getByRole("button", { name: "閉じる", exact: true }).click();
   await expect(page.getByTestId("stage")).toHaveText("1");
-  await expect(page.getByTestId("clear-time")).toContainText("1.76");
+  // P1 now starts with free Speed2/Critical1/Overkill1: 1.07s instead of 1.76s.
+  await expect(page.getByTestId("clear-time")).toContainText("1.07");
   await expect(page.getByLabel("AUTO ATK購入")).toBeChecked();
 });
 test("BURST displays aggregate results, survives reload and exits at deeper stages", async ({

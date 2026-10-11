@@ -1,4 +1,4 @@
-# LOOP BREAKER — 技術設計 v4（Issue #11）
+# LOOP BREAKER — 技術設計 speed-7（Issue #19）
 
 実装方針を定義する文書。[GAME_DESIGN](GAME_DESIGN.md) と [BALANCE_DESIGN](BALANCE_DESIGN.md) を仕様として使用する。Issue #3で初期実装を追加した。具体的な構成・検証結果・仕様補足は [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) を参照。
 
@@ -17,7 +17,8 @@ src/config/balance.ts       # 数式の係数、価格、上限、解禁、Stage
 src/config/presentation.ts  # UI更新/演出/Save間隔、表示桁
 src/game/state.ts           # GameState、Command、初期状態
 src/game/math.ts            # Damage/DPS/価格/SOUL/ClearTime/Stage積分
-src/game/advance.ts         # advance、周回集計、AUTO、BURST
+src/game/advance.ts         # advance、周回集計、AUTO時計、BURST
+src/game/automation.ts      # ATK/Routeの2候補比較と集約MAX購入
 src/game/commands.ts        # buy、Prestige、deepen、AUTO設定
 src/game/number.ts          # Decimal生成/演算補助/表記/シリアライズ
 src/game/save.ts            # schema検証、migration、encode/decode
@@ -31,25 +32,25 @@ tests/                     # 純粋関数、Save fixture、統合、ブラウザ
 
 ## 2. 設定と状態
 
-balance.tsの1オブジェクトに以下を集中させる: HP内訳/初期成長1.002/追加成長3区間（101–700:1.020、701–1000:1.005、1001以降:1.001）、攻撃/速度/Crit/Overkill/Delayの全係数、Gold/CLEARとStage倍率（増分.0005、上限+5%）、初期Damage60/固定待ち1秒/Route上限6+3p、5強化の価格とGrowth、Prestige回数別の上限解放式、解禁CLEAR、恒久価格と効果、LOOP MASTERYの回数/名称/累積倍率、SOUL式係数/指数1.5/2回目ボーナス、Stage境界の5/1、初期目標100/増分50/Prestige cap800、継続MASTERY固定開始P16、Deep間隔50、深化25、BURST閾値.001/復帰.0011/窓5秒、将来の周回率倍率（初期1）。balanceVersionはspeed-6。Prestige最低時間の設定は存在しない。UIから参照し、同じ数値を重複定義しない。
+balance.tsの1オブジェクトに以下を集中させる: HP内訳/初期成長1.002/追加成長3区間（101–700:1.020、701–1000:1.005、1001以降:1.001）、攻撃/速度/Crit/Overkill/Delayの全係数、Gold/CLEARとStage倍率（増分.0005、上限+5%）、初期Damage60/固定待ち1秒/Route上限6+3p、2購入の価格とGrowth、3パッシブの解禁/Lv式/上限、AUTO ROUTE解禁Stage900、Prestige回数別の上限解放式、解禁CLEAR、恒久価格と効果、LOOP MASTERYの回数/名称/累積倍率、SOUL式係数/指数1.5/2回目ボーナス、Stage境界の5/1、初期目標100/増分50/Prestige cap800、継続MASTERY固定開始P16、Deep間隔50、深化25、BURST閾値.001/復帰.0011/窓5秒、将来の周回率倍率（初期1）。balanceVersionはspeed-7。Prestige最低時間の設定は存在しない。UIから参照し、同じ数値を重複定義しない。
 
-presentation.tsにはUI通知100ms、AUTO判断1秒、Save5秒、演出LODはcombatVisual.tsで斬撃上限4/秒、説明用桁数。AUTO間隔は収入に影響するため変更時はバランス検証も行う。設定検証で負数、成長係数1以下の価格、Crit率100%超、ゼロClearTime、整合しない上限を拒否する。
+presentation.tsにはUI通知100ms、AUTO判断1秒、Save5秒、演出LODはcombatVisual.tsで斬撃上限4/秒、説明用桁数。AUTO間隔は収入に影響するため変更時はバランス検証も行う。設定検証で負数、成長係数1以下の価格、Crit係数の範囲外、ゼロClearTime、整合しない上限を拒否する。
 
 所有するStateは現在Gold、通常Lv、Cycle CLEAR、経路進行routeClears、周回進捗phase、Cycle表示中時間、現在目標Stage、Cycle最高CLEAR Stage、SOUL、恒久Lv、Prestige回数、Deep MASTERY Lv、生涯解禁、AUTO設定、集計統計、部分BURST、AUTO時計。Damage/DPS/HP/価格/現在Clear Timeは派生値。現在StageはrouteClears/目標から導出しSaveでは参考値としてのみ保存する。LOOP MASTERYはPrestige回数とDeep MASTERY Lv、通常上限はPrestige回数から導出する。累積倍率をSaveに重複保存しない。Cycle時間は統計専用。UI用の開いているシート、アニメ進捗、選択カードは永続化しない。
 
-固定範囲のLv/Stage/フラグはnumber/boolean。Lvは安全な整数かつ数値保護上限1,000,000以下（ATKのゲーム上の到達上限ではない）、Crit<=8。Stage/目標は数値保護上限1,000,000,000以下。Required Stageはゲーム上800でcapするが、任意深化のStage保護上限は1e9を維持する。Prestige回数はStageとの上限連動を外し、独立した安全整数上限1e9を設定する（待機ゲートではない）。Deep Lv上限はfloor((Stage保護上限−800)/50)=19,999,984。routeClearsもnumberで、目標初CLEARの境界+1以下（最大約4e10）。巨大量はDecimal。設定変更で保護限界を広げる時は再検証する。
+固定範囲のLv/Stage/フラグはnumber/boolean。Lvは安全な整数かつ数値保護上限1,000,000以下（ATKのゲーム上の到達上限ではない）、導出Speed<=8/Crit・Overkill<=12。Stage/目標は数値保護上限1,000,000,000以下。Required Stageはゲーム上800でcapするが、任意深化のStage保護上限は1e9を維持する。Prestige回数はStageとの上限連動を外し、独立した安全整数上限1e9を設定する（待機ゲートではない）。Deep Lv上限はfloor((Stage保護上限−800)/50)=19,999,984。routeClearsもnumberで、目標初CLEARの境界+1以下（最大約4e10）。巨大量はDecimal。設定変更で保護限界を広げる時は再検証する。
 
 ## 3. 時間の進め方とイベント順序
 
 runtimeだけがperformance.now相当の単調時計を読む。rAFは演出に使い、経過時間からadvanceを呼ぶ。UI描画は最大10Hz。遅いフレームでもdeltaをフレーム固定秒に置き換えない。ページ非表示時はそこまで精算し保存、時計基準を捨てる。復帰時は新しい基準時刻から始める。deltaが5秒を超える長時間中断は最大5秒だけ進め、余剰は破棄して「中断中は進行しません」を表示する。通常の小さなカクつきでは時間を失わない。Date.nowはSaveの表示日時にだけ使う。
 
-1. 次のAUTO整数秒境界、BURST5秒境界、外部操作時刻までを時間区間として取る。
+1. 次のAUTO整数秒境界、BURST5秒境界、P0パッシブの6/20/40 CLEAR境界、外部操作時刻までを時間区間として取る。
 2. その区間を購入前の一定能力で積分する。Stageは区間内でも変わるので後述のStage積分を使用する。
 3. CLEAR/Gold/経路進行/統計/Cycle時間/Stage最高CLEAR/解禁をまとめて反映。
 4. 同じ時刻ならBURSTを閉じてからAUTO購入、その後ユーザー操作。通知はまとめる。
 5. 能力を再計算して残区間を進める。
 
-unlockは区間内の閾値通過で記録するが、自動で新能力を購入しない。AUTO ATKだけONなら、解禁後の次の1秒境界から実行する。解禁の境界処理が必要な範囲は固定5件。初回の参考手動購入モデルは本体AUTOと別物。
+P0パッシブは6/20/40の最大3境界で積分を区切り、CLEAR後の残時間へ新しい無料能力を使う。購入/Gold控除はしない。AUTO ATKだけONなら、解禁後の次の1秒境界から実行する。解禁の境界処理が必要な範囲は固定5件。初回の参考手動購入モデルは本体AUTOと別物。
 
 ユーザー購入時はその瞬間までadvanceしてからbuyを処理。phaseは0〜1の周回比率なので能力変更時も維持し、新ClearTimeの残り `(1−phase)×T` を使う。これは能力購入で現在周も速くなる仕様であり、開始時能力のスナップショットをSaveしない。
 
@@ -127,13 +128,13 @@ localStorageにJSONを保存。現在・前回正常Saveの2スロット、合�
 ```json
 {
   "saveVersion": 1,
-  "balanceVersion": "speed-6",
+  "balanceVersion": "speed-7",
   "savedAt": "2026-10-03T00:00:00.000Z",
   "run": {
     "stage": 1, "targetStage": 100,
     "gold": "0", "clears": "0", "routeClears": 0, "phase": 0,
     "activeSeconds": 0, "highestClearedStage": 0,
-    "upgrades": {"atk": 0, "speed": 0, "crit": 0, "overkill": 0, "delay": 0},
+    "upgrades": {"atk": 0, "delay": 0},
     "approximateClears": false,
     "autoClock": 0,
     "burst": {"active": false, "seconds": 0, "clears": "0", "gold": "0"}
@@ -143,7 +144,7 @@ localStorageにJSONを保存。現在・前回正常Saveの2スロット、合�
     "upgrades": {"power": 0, "wealth": 0, "tempo": 0},
     "unlocks": {"speed": false, "crit": false, "overkill": false, "delay": false, "autoAtk": false, "burst": false}
   },
-  "automation": {"atkEnabled": false, "autoAdvanceEnabled": false, "reserveGold": "0"},
+  "automation": {"atkEnabled": false, "routeEnabled": false, "autoAdvanceEnabled": false, "reserveGold": "0"},
   "stats": {
     "totalClears": "0", "totalGoldEarned": "0",
     "fastestClear": null, "fastestClearStage": null,
@@ -166,9 +167,9 @@ Loadはcurrent検証→失敗ならbackup→両方失敗なら新規開始の選
 
 ## 8. Version / Migration
 
-Issue #13の同一Balance拡張: automation.autoAdvanceEnabledをbooleanで保存。欠損時false、型不正は拒否。当時はsaveVersion1 / balanceVersion speed-4。現在はspeed-6のみ受理し、同一Balanceの欠損false補完は継続。旧Balance拒否は変更しない。Prestigeはautomation全体を保持する。集約進行は計算用の最終+25上限を使い、実際の最高CLEAR StageからTargetをO(1)で導出する。BURST退出探索も同じ上限を使う。CLEAR/Target比例loopやUI通知を追加しない。[AUTO_ADVANCE](AUTO_ADVANCE.md)に式・計算量・保護上限・テスト方針を記録。
+Issue #13の同一Balance拡張: automation.autoAdvanceEnabledをbooleanで保存。欠損時false、型不正は拒否。当時はsaveVersion1 / balanceVersion speed-4。現在はspeed-7のみ受理し、同一Balanceの欠損false補完は継続。旧Balance拒否は変更しない。Prestigeはautomation全体を保持する。集約進行は計算用の最終+25上限を使い、実際の最高CLEAR StageからTargetをO(1)で導出する。BURST退出探索も同じ上限を使う。CLEAR/Target比例loopやUI通知を追加しない。[AUTO_ADVANCE](AUTO_ADVANCE.md)に式・計算量・保護上限・テスト方針を記録。
 
-saveVersionは構造変更、balanceVersionは式や価格変更。**正式リリースまではBalance間のSave互換性を保証しない。** schema v1を維持し、balanceVersion speed-6へ更新し、異なるBalanceはdecode/Importで明示的に拒否する。prototype-2 / speed-3の経路変換を削除し、旧版の暗黙読替えをしない。将来のschema migration registryは残し、登録された純粋関数を順に適用して最後に全体検証する。今は架空のv0 migrationを実装しない。Migrationにclockやネットワークを使わない。
+saveVersionは構造変更、balanceVersionは式や価格変更。**正式リリースまではBalance間のSave互換性を保証しない。** schema v1を維持し、balanceVersion speed-7へ更新し、異なるBalanceはdecode/Importで明示的に拒否する。prototype-2 / speed-3の経路変換を削除し、旧版の暗黙読替えをしない。将来のschema migration registryは残し、登録された純粋関数を順に適用して最後に全体検証する。今は架空のv0 migrationを実装しない。Migrationにclockやネットワークを使わない。
 
 将来のschema変更では追加フィールドのdefault、削除、ID mappingを個別に設計する。装備個体や履歴へ変換しない。現行BalanceのStageはrun.routeClears/targetから再計算し、保存stageとの差があれば表示用stageを修復する。経路進行は0〜b(target)+1かつ総CLEAR以下を検証する。Balance間の変換や補償を汎用registryへ詰め込まない。
 
@@ -221,3 +222,13 @@ formatTimeはBigのままs/ms/μs/ns/ps表示。presentation LODは独立設定�
 Issue #15（過去記録）: balanceVersion speed-5、schema Version1。speed-4 migrationなし。hp/stageSumsのみ3区間の有限式へ変更し、AUTO ADVANCE・binary search・BURSTは無変更。[DEEP_HP_DESIGN](DEEP_HP_DESIGN.md)。
 
 Issue #17: meta.deepMasteryLevelはspeed-6の必須整数フィールド（初期0）。saveVersion1を維持し、speed-5 migrationは追加しない。旧Balanceは検証入口で明示拒否し原文Exportを維持する。Prestige確定で最高milestoneをmax更新し、同一transactionでSOUL/回数/Resetを反映する。Required Stage・Deep Lv・MASTERYはO(1)式（Bigの有限回演算）で導出しmilestone履歴を保存しない。rangeTotals・stageSums・経路二分探索・AUTO ADVANCE集約は無変更、CLEAR数にもmilestone数にも比例しない。[検証・off-by-one](PRESTIGE_CAP_DESIGN.md)。
+
+## Issue #19: パッシブとAUTO ROUTE
+
+run.upgradesはatk/delayだけ。passiveLevelsはP0のrun.clears、以後のprestigeCount/deepMasteryLevelから導出し、派生LvをSaveへ保存しない。旧3キーが混入したspeed-7 payloadは拒否する。P0解禁通知用の既存meta.unlocksフラグは維持。Crit11/12でも既存期待値の線形式を維持し、確率としてclampしない。
+
+automation.routeEnabledをbooleanで保存。stats.highestStage>=900を解禁の正本にし、重複解禁フラグは追加しない。初期OFF、未解禁ON commandはno-op、未解禁ON Saveは拒否。Prestigeでautomation保持。旧speed-6を移行せず入口で拒否し原文保持。
+
+automation.tsはUI非依存。2候補の効率比較/優先資金確保/幾何MAX購入を既存AUTOの1秒境界で実行する。両AUTOに共通reserveGoldを適用。候補数最大2、購入Lvの数に比例しない。AUTO ADVANCEのTarget集約/有限HPブロック/rangeTotals/二分探索は維持する。P0追加境界も最大3でCLEAR数に比例しない。Stage900解禁は生涯最高の閾値通過で1件通知する。
+
+既存3simulationは歴史的speed-6比較、passives.pyがspeed-7参照。10個の同じ入力でPythonと本体の効率順/Lv/Goldを比較する。3パッシブ境界を跨ぐ1e12以上CLEAR、AUTO併用、保存/拒否、UI/通信予算も自動検証する。[仕様・実測](PRESTIGE_PASSIVES_DESIGN.md)。

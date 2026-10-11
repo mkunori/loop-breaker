@@ -49,7 +49,7 @@ test("visual LOD and Reduced Motion follow time units without attack events", as
     const raw = JSON.parse(fixture("prestige"));
     raw.meta.prestigeCount = 4;
     raw.run.targetStage = 200;
-    raw.run.upgrades = { atk, speed: 3, crit: 3, overkill: 2, delay };
+    raw.run.upgrades = { atk, delay };
     raw.automation.atkEnabled = false;
     await importSave(page, JSON.stringify(raw));
     await expect(scene).toHaveAttribute("data-lod", lod);
@@ -102,7 +102,7 @@ test("million and trillion CLEAR scales keep DOM, React commits and network boun
     raw.run.clears = "14746";
     raw.stats.totalClears = "14746";
     raw.stats.highestStage = 2950;
-    raw.run.upgrades = { atk, speed: 8, crit: 8, overkill: 8, delay };
+    raw.run.upgrades = { atk, delay };
     raw.automation.atkEnabled = false;
     raw.run.burst = { active: false, seconds: 0, clears: "0", gold: "0" };
     await importSave(page, JSON.stringify(raw));

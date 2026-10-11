@@ -1,7 +1,13 @@
-import { BALANCE, type PermanentId, type UpgradeId } from "../config/balance";
+import {
+  BALANCE,
+  type PermanentId,
+  UPGRADE_IDS,
+  type UpgradeId,
+} from "../config/balance";
 import { closeBurst, type GameEvent, reconcileMode } from "./advance";
 import {
   autoAdvanceTarget,
+  autoRouteUnlocked,
   bulkPrice,
   canDeepen,
   canPrestige,
@@ -21,6 +27,7 @@ export type Command =
   | { type: "permanent"; id: PermanentId }
   | { type: "prestige"; expectedCount: number }
   | { type: "deepen" }
+  | { type: "autoRoute"; enabled: boolean }
   | { type: "autoAdvance"; enabled: boolean }
   | { type: "auto"; enabled: boolean; reserve: Big }
   | { type: "settings"; sound: boolean; reducedMotion: boolean };
@@ -31,6 +38,7 @@ export function command(
   const s = cloneState(input),
     events: GameEvent[] = [];
   if (cmd.type === "buy") {
+    if (!UPGRADE_IDS.includes(cmd.id)) return { state: s, events };
     const level = s.run.upgrades[cmd.id],
       upper = cap(cmd.id, s.meta.prestigeCount);
     if (unlocked(s, cmd.id) && level < upper) {
@@ -82,6 +90,8 @@ export function command(
   } else if (cmd.type === "autoAdvance") {
     s.automation.autoAdvanceEnabled = cmd.enabled;
     s.run.targetStage = autoAdvanceTarget(s);
+  } else if (cmd.type === "autoRoute") {
+    s.automation.routeEnabled = cmd.enabled && autoRouteUnlocked(s);
   } else if (cmd.type === "auto") {
     if (!validBig(cmd.reserve)) throw new Error("予約Goldが不正です");
     s.automation.reserveGold = D(cmd.reserve);

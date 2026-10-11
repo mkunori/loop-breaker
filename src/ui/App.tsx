@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   BALANCE,
+  PASSIVE_IDS,
   PERMANENT_IDS,
   UPGRADE_IDS,
   type UpgradeId,
@@ -9,6 +10,7 @@ import { combatLod } from "../config/combatVisual";
 import { PRESENTATION } from "../config/presentation";
 import { VISUAL } from "../config/visual";
 import {
+  autoRouteUnlocked,
   boundary,
   bulkPrice,
   canDeepen,
@@ -23,7 +25,9 @@ import {
   mastery,
   maxBuy,
   nextDeepMasteryStage,
+  passiveLevels,
   prestigeDeepMastery,
+  prestigePassives,
   price,
   requiredStage,
   soulPrice,
@@ -46,9 +50,6 @@ const duration = (seconds: number) =>
     .padStart(2, "0")}`;
 const effects: Record<UpgradeId, string> = {
   atk: `Damage ×${BALANCE.damage.growth} / ATK待ち係数 ×${BALANCE.delay.atk}`,
-  speed: `攻撃頻度 ×${BALANCE.speedGrowth}`,
-  crit: `Crit率 +${BALANCE.critChance * 100}% / ${BALANCE.critMultiplier}倍ダメージ`,
-  overkill: `再利用倍率 +${BALANCE.overkill}`,
   delay: `Route待ち係数 ×${BALANCE.delay.compression}（ATKと合算）`,
 };
 let audio: AudioContext | undefined;
@@ -70,7 +71,9 @@ export function App({ runtime }: { runtime: GameRuntime }) {
   const view = useSyncExternalStore(runtime.subscribe, runtime.getSnapshot),
     s = view.state;
   const pendingDeepLevel = prestigeDeepMastery(s),
-    nextDeepStage = nextDeepMasteryStage(pendingDeepLevel);
+    nextDeepStage = nextDeepMasteryStage(pendingDeepLevel),
+    passive = passiveLevels(s),
+    nextPassive = prestigePassives(s.meta.prestigeCount + 1, pendingDeepLevel);
   const [sheet, setSheet] = useState<Sheet>(null),
     [maxMode, setMaxMode] = useState(false);
   const [reserve, setReserve] = useState(scientific(s.automation.reserveGold)),
@@ -157,9 +160,6 @@ export function App({ runtime }: { runtime: GameRuntime }) {
           {quick
             ? {
                 atk: "ATK",
-                speed: "Speed",
-                crit: "Crit",
-                overkill: "Overkill",
                 delay: "Route",
               }[id]
             : BALANCE.upgrades[id].label}{" "}
@@ -185,6 +185,30 @@ export function App({ runtime }: { runtime: GameRuntime }) {
       </button>
     );
   }
+  const passiveSummary = (
+    <div data-testid="passive-abilities">
+      <h3>PRESTIGE PASSIVES</h3>
+      <p>購入不要。Prestigeで成長し、次Cycleから自動適用。</p>
+      <p>
+        Attack Speed Lv{passive.speed} · 攻撃頻度 ×
+        {(BALANCE.speedGrowth ** passive.speed).toFixed(2)}
+      </p>
+      <p>
+        Critical Lv{passive.crit} · 期待Damage ×
+        {(
+          1 +
+          BALANCE.critChance * (BALANCE.critMultiplier - 1) * passive.crit
+        ).toFixed(2)}
+      </p>
+      <p>
+        Overkill Lv{passive.overkill} · 再利用 ×
+        {(1 + BALANCE.overkill * passive.overkill).toFixed(2)}
+      </p>
+      {s.meta.prestigeCount === 0 && (
+        <small>初回: 6 / 20 / 40 CLEARで順にLv1が無料解禁。</small>
+      )}
+    </div>
+  );
   function updateAuto(enabled: boolean) {
     try {
       const amount = D(reserve.replaceAll(",", ""));
@@ -437,7 +461,9 @@ export function App({ runtime }: { runtime: GameRuntime }) {
         <div className="sheet-content">
           {sheet === "upgrades" && (
             <>
-              <p>戦闘は最初から自動。購入で1周の時間を短くします。</p>
+              <p>
+                戦闘は最初から自動。ATKとRouteの購入で1周の時間を短くします。
+              </p>
               <div className="all-upgrades">
                 {UPGRADE_IDS.map((id) => upgrade(id))}
               </div>
@@ -457,9 +483,10 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                   ),
                 )}
               </p>
+              {passiveSummary}
               {s.meta.unlocks.autoAtk && (
                 <fieldset>
-                  <legend>AUTO ATK（強化購入の自動化）</legend>
+                  <legend>AUTO購入</legend>
                   <label>
                     <input
                       type="checkbox"
@@ -468,6 +495,28 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                     />{" "}
                     1秒ごとにATKをMAX購入
                   </label>
+                  {autoRouteUnlocked(s) ? (
+                    <label className="field">
+                      <span>
+                        <input
+                          type="checkbox"
+                          aria-label="AUTO ROUTE"
+                          checked={s.automation.routeEnabled}
+                          onChange={(e) =>
+                            runtime.dispatch({
+                              type: "autoRoute",
+                              enabled: e.target.checked,
+                            })
+                          }
+                        />{" "}
+                        AUTO ROUTE {s.automation.routeEnabled ? "ON" : "OFF"}
+                      </span>
+                    </label>
+                  ) : (
+                    <p>
+                      AUTO ROUTE: 生涯Stage {BALANCE.autoRouteStage} CLEARで解禁
+                    </p>
+                  )}
                   <label className="field">
                     残しておくGold
                     <input
@@ -484,7 +533,9 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                     予約Goldを保存
                   </button>
                   <small>
-                    他の強化用に残せます。設定はPrestige後も保持します。
+                    両AUTO共通で残すGoldです。設定はPrestige後も保持します。
+                    両方ONでは、現在Stageの短縮効率が高い候補を先にMAX購入。
+                    その資金が足りない間は貯めます。Routeだけでは攻撃力は育たないため、ATKも育成しましょう。
                   </small>
                 </fieldset>
               )}
@@ -579,6 +630,30 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                   )}
                 </div>
               )}
+              {passiveSummary}
+              <div data-testid="next-passives">
+                <h3>次Prestigeのパッシブ成長</h3>
+                {PASSIVE_IDS.map((id) => (
+                  <p key={id}>
+                    {BALANCE.passives[id].label} Lv{passive[id]} → Lv
+                    {nextPassive[id]}
+                  </p>
+                ))}
+                <p>
+                  Critical / Overkillは通常PrestigeでLv10まで、確定Deep
+                  Lvで最大12。 通常LvとDeep保証Lvの高い方を適用します。
+                </p>
+                <p>
+                  今回確定後のDeep保証: Lv
+                  {s.meta.prestigeCount + 1 >= BALANCE.passiveDeep.startPrestige
+                    ? Math.min(
+                        BALANCE.passiveDeep.max,
+                        BALANCE.passiveDeep.floor + pendingDeepLevel,
+                      )
+                    : 0}
+                  （P16以降、Lv11にはDeep3、Lv12にはDeep4が必要）
+                </p>
+              </div>
               <h3>次回の通常強化上限</h3>
               <p>
                 {UPGRADE_IDS.filter((id) => id !== "atk")
@@ -600,9 +675,6 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                   next.meta.prestigeCount++;
                   next.run.upgrades = {
                     atk: 0,
-                    speed: 0,
-                    crit: 0,
-                    overkill: 0,
                     delay: 0,
                   };
                   return formatTime(clearTime(next, 1));
@@ -685,6 +757,16 @@ export function App({ runtime }: { runtime: GameRuntime }) {
                   s.meta.prestigeCount,
                   s.meta.deepMasteryLevel,
                 ).toPrecision(4)}
+              </dd>
+              <dt>パッシブ</dt>
+              <dd>{passiveSummary}</dd>
+              <dt>AUTO ROUTE</dt>
+              <dd>
+                {autoRouteUnlocked(s)
+                  ? s.automation.routeEnabled
+                    ? "ON"
+                    : "OFF"
+                  : "Stage900で解禁"}
               </dd>
               <dt>経路進捗</dt>
               <dd>

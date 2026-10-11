@@ -1,4 +1,4 @@
-# LOOP BREAKER — ゲーム設計 v4（Issue #11）
+# LOOP BREAKER — ゲーム設計 speed-7（Issue #19）
 
 設計日: 2026-10-03。原案: [Issue #1](https://github.com/mkunori/loop-breaker/issues/1)。本書群は初期実装の仕様。数値の正本は [BALANCE_DESIGN.md](BALANCE_DESIGN.md)、処理・保存の正本は [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md)。Issue #3の初期実装・検証結果は [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) を参照。
 
@@ -6,7 +6,7 @@
 
 LOOP BREAKERは巨大数を増やしながらClear Timeの桁を削っていくゲーム。自動戦闘の5秒RUNを秒→ms→μs→BURSTへ圧縮する。プレイヤーの仕事は強化購入とPrestigeの判断。敵の種類や装備管理で複雑さを増やさない。
 
-初期実装に含める: 自動戦闘、5種類の通常強化、3種類の恒久強化、AUTO ATK、Stage進行、Prestige、BURST、Save/Export/Import、集計統計。装備、ランダムドロップ、実績報酬、クエスト、手動攻撃、スタミナ、広告、課金、サーバー、ランキングは含めない。実績候補は統計から後で判定でき、初期は到達通知だけ。
+初期実装に含める: 自動戦闘、ATK/Routeの2通常強化、3無料パッシブ、3種類の恒久強化、AUTO ATK/AUTO ROUTE、Stage進行、Prestige、BURST、Save/Export/Import、集計統計。装備、ランダムドロップ、実績報酬、クエスト、手動攻撃、スタミナ、広告、課金、サーバー、ランキングは含めない。実績候補は統計から後で判定でき、初期は到達通知だけ。
 
 起動中かつページ表示中のみ進む。背景タブ、画面ロック、終了中は進まない。復帰時に経過時間を精算しない。数分で購入と短縮を体験し、中断時点の周回進捗を再開できる。
 
@@ -24,7 +24,7 @@ LOOP BREAKERは巨大数を増やしながらClear Timeの桁を削っていく�
 
 Stage開始境界は経路進行CLEAR `5 × (Stage−1)`。初期Stage100への到達は495 CLEAR、そこで最低1周を完了した496 CLEARでPrestigeのStage条件を満たす。途中Stageの必要周回数は5。現在Cycleの到達目標までは自動でStageを上げ、目標到達後は同Stageで周回する。初回〜3Cycleの目標は100、その後150、200…と上がる。Stage100までは緩いHP上昇で圧縮を優先し、101以降は敵HP成長を強めて深度と成長を釣り合わせる。
 
-3回目Prestige以降、現在のtargetStageを実際にCLEAR済みの場合のみ「さらに進む」で目標を25増やせる。目標への入場だけでは不可。+25直後は次の目標をCLEARするまで再実行できない。UIとgame commandで同じ条件を確認する。必要Stageを1000で固定しない。技術上の数値保護限界を超えた場合は進行停止・Exportとし、限界StageのPrestigeを無制限に繰り返させない。各CLEARのGoldにStageごとの小さな倍率を掛け、Stage101以降は最大+5%で固定する。深いStageの即時メリットを保ち、Goldインフレの主因にはしない。
+3回目Prestige以降、現在のtargetStageを実際にCLEAR済みの場合のみ「さらに進む」で目標を25増やせる。目標への入場だけでは不可。+25直後は次の目標をCLEARするまで再実行できない。UIとgame commandで同じ条件を確認する。Required Stageは800上限。任意深化はStage保護上限1e9まで。Stage800攻略後は深部からもPrestigeでFarmへ戻れる。各CLEARのGoldにStageごとの小さな倍率を掛け、Stage101以降は最大+5%で固定する。深いStageの即時メリットを保ち、Goldインフレの主因にはしない。
 
 目標到達後の稼ぎCLEARは経路進行へ貯めない。総Cycle CLEARと、目標Stageの初CLEARまで進む経路進行CLEAR（routeClears）を別集計し、後者は目標で止める。「さらに進む」でも経路進行から再開するため、弱いStageで貯めた大量CLEARで深い敵を飛ばしてSOULを得ることはできない。過去CLEARへの新Stage倍率の遡及付与もない。通常の自動進行中は両CLEARが同じ値になる。
 
@@ -32,13 +32,11 @@ Issue #13: 任意のAUTO ADVANCEを「さらに進む +25」の隣へ追加。Pr
 
 ## 3. 通常強化と解禁
 
-ATKは最初から購入可能。Attack Speed、Critical、Overkill、Route CompressionはCycle CLEAR 6 / 20 / 40 / 70で順に解禁。120でAUTO ATK解禁。約0:29 / 1:13 / 1:52 / 2:31 / 3:15の目安であり、時計による待機ゲートにはしない。一度解禁した機能はPrestigeを越えて残る。
+ATKは最初から、Route Compressionは70 CLEARで購入解禁。Gold購入はこの2種類のみ。Speed/Critical/Overkillはボタン・購入Goldなしの無料パッシブ。P0は6/20/40 CLEARで順にLv1、P1以降はPrestige回数と確定Deep Lvから自動導出する。Speedは最大8、Crit/Overkillは通常10、P16以降のDeepで最大12。Deep分は加算せず通常Lvとのmax。式と比較は[PRESTIGE_PASSIVES_DESIGN](PRESTIGE_PASSIVES_DESIGN.md)。
 
-初回はSpeed/Crit/Overkillの上限Lv1、RouteはLv6で以後Prestige毎+3、最大Lv30。初回PrestigeでSpeed Lv2、2回目PrestigeでCrit Lv2を解放し、2〜3Cycle目にも「新しい強化にGoldを回すか、ATKを優先するか」という判断を残す。解禁カードに効果、価格、購入後のClear Timeを表示する。購入は即時、現在周の進捗比率は保つ。購入前の時間を先に精算し、Gold不足なら何も変更しない。x1 / MAXのみ用意し、MAXは現在の残高以内、解禁・上限以内。誤購入の取消は設けない。
+AUTO ATKは120 CLEARで解禁。AUTO ROUTEは生涯最高CLEAR Stage900で恒久解禁し、最初OFF。設定はUPGRADESシートに置き、Prestige・Save後も保持する。毎秒の共通時計で購入。両ONなら現在Stageの短縮量/価格の高い方を先にMAX、残額で他方をMAX。優先候補が資金不足なら貯める。予約Goldは両AUTOが触らず残す共通下限。Routeのみでは攻撃力が育たないことを説明する。AUTO ADVANCEはTarget更新、Prestigeは手動のまま。
 
-AUTO ATKは通常攻撃の自動化ではなく**ATK強化の自動購入**。戦闘は初めから自動。解禁時はOFF、明示してONにできる。1秒の表示中時間ごとに予算内でATKをMAX購入する。他強化のためにGoldを残す任意の「予約Gold」を1つだけ設定できる（既定0）。購入停止は即時。Prestige後もON/OFFと予約額を保持。ほかのAUTO系は初期実装に含めず、購入設定を強化IDごとに追加できる構造にする。
-
-3回目PrestigeではSpeed Lv3、Overkill Lv2、Compression Lv15を解放。以後も段階的に上限が上がり、最終上限はSpeed/Crit/Overkill各8、Compression30。全上限を一度に開かず、圧縮の節目を残す。具体的な回数別の上限式はバランス書参照。SOULを消費する解放ではなく、Prestigeマイルストーンの報酬。
+パッシブ現在Lv/期待値効果をUPGRADESとStatsへ、現在→次LvとDeep保証をPrestigeシートへ表示。確定前のDeepで現在能力を増やさず、次Cycle予測だけに含める。初回6/20/40 CLEARの通知も無料パッシブとして表示する。
 
 ## 4. Prestige
 
@@ -46,13 +44,13 @@ Prestige解禁は初回CycleでStage100を1周以上CLEAR。以後は現在Cycle
 
 必要Stageは `min(100 + 50 × max(0, prestigeCount−2), 800)`（完了済み回数）。P0/1/2は100、P15は750、P16以降は800。現在Cycleで必要Stageを一度CLEARすれば、825/850等へ深化してもPrestige可能状態を保持する。停滞時はいつでも手動PrestigeでFarmをやり直せる。最低時間制限もAUTO Prestigeも追加しない。[cap・Deep MASTERY・P50比較](PRESTIGE_CAP_DESIGN.md)。
 
-Prestige画面に獲得SOUL、次Cycleの必要Stage、LOOP MASTERY報酬、通常強化の新しい上限、残るもの・リセットされるもの、予測Clear Timeを表示。「Prestigeする」を押すと同じパネル内で確認し確定する。開いたパネルは戦闘を止めないが、確定時に最新の条件を再判定する。予測は現在の恒久Lv・通常Lv0・Stage1・完了済み回数p+1（今回のLOOP MASTERY獲得後）に基づき、未購入SOUL強化を勝手に仮定しない。
+Prestige画面に獲得SOUL、次Cycleの必要Stage、LOOP MASTERY報酬、Routeの上限と無料パッシブの次Lv、残るもの・リセットされるもの、予測Clear Timeを表示。「Prestigeする」を押すと同じパネル内で確認し確定する。開いたパネルは戦闘を止めないが、確定時に最新の条件を再判定する。予測は現在の恒久Lv・購入Lv0・次CycleパッシブLv・Stage1・完了済み回数p+1（今回のLOOP MASTERY獲得後）に基づき、未購入SOUL強化を勝手に仮定しない。
 
 SOUL表示はPrestige可能な場合のみ「今回 +N SOUL」とする。未達成時は「Stage N CLEARでPrestige可能」と表示し、現在の未攻略深度から算出した未確定報酬を今回獲得扱いにしない。SOUL式・2回目ボーナスはそのまま維持する。
 
 リセット: Gold、通常強化全Lv、Cycle CLEAR、経路進行CLEAR、現在Stage、周回進捗、Cycle時間、Cycle内最高CLEAR Stage。保持: SOUL、恒久強化、Deep MASTERY Lv、Prestige回数、解禁フラグ、AUTO設定、累積統計、UI設定。SOULを付与し回数を増やす操作とResetは1トランザクション。
 
-POWER / WEALTH / TEMPOはIssueの効果・価格を採用。恒久強化はSOULで買い、自由な配分を認める。初回4 SOULでLv1を1つずつ買える。2回目のみ追加4 SOULを贈り、計8で各Lv2を買える。Cycle2約1分42秒、Cycle3は初BURSTまで約7分57秒はこの均等配分の参考ルートで検証する。別配分まで同じ到達時間にはしない。SOUL指数1.5は12Cycleまでの比較検証を踏まえて維持する。
+POWER / WEALTH / TEMPOはIssueの効果・価格を採用。恒久強化はSOULで買い、自由な配分を認める。初回4 SOULでLv1を1つずつ買える。2回目のみ追加4 SOULを贈り、計8で各Lv2を買える。Cycle2約1分37秒、Cycle3は初BURSTまで約7分55秒はこの均等配分の参考ルートで検証する。別配分まで同じ到達時間にはしない。SOUL指数1.5は12Cycleまでの比較検証を踏まえて維持する。
 
 **LOOP MASTERY（仮称）**は「Prestigeで周回の仕組みそのものを圧縮する」明示的なマイルストーン。初回PrestigeでBREAK I、2回目でBREAK IIを自動獲得し、全RUN時間の倍率が1→0.55→0.36となる。第4のSOUL購入系統にはしない。
 
@@ -80,10 +78,12 @@ Damage base60、待ち1秒、ATK価格100/1.2、Route価格100/1.8、Stage密度
 
 ## Issue #11: 15分BURSTとQuick Buy
 
-ATK価格35/1.12・Route価格2000/1.8・Stage密度5・Route上限6+3p。ATK単独でも固定待ちを圧縮する式を採用。常駐はATK+候補1つの名前/Lv/価格/短縮時間、詳細はシート、AUTO予約はシートのみ。[BURST_15_DESIGN](BURST_15_DESIGN.md)に購入モデルと比較理由を記録。Active Farm初Prestige5:54・初BURST累積15:33、Casual18:03、AUTO Only23:10。3Cycle目はStage100で初BURSTまで育成継続する参考方針。即Prestigeを毎回選ぶImmediateもcap前の継続MASTERYで21:17に初BURSTへ到達する。Cycle3以降・BURST未解禁ならPrestige画面に育成継続の選択肢を案内する。強制制限はない。
+ATK価格35/1.12・Route価格2000/1.8・Stage密度5・Route上限6+3p。ATK単独でも固定待ちを圧縮する式を採用。常駐はATK+候補1つの名前/Lv/価格/短縮時間、詳細はシート、AUTO予約はシートのみ。[BURST_15_DESIGN](BURST_15_DESIGN.md)に購入モデルと比較理由を記録。現行Active Farm初Prestige5:48・初BURST累積15:20、Casual16:25、AUTO Only20:56。3Cycle目はStage100で初BURSTまで育成継続する参考方針。Immediateの現行本体参考は16:56で初BURST。Cycle3以降・BURST未解禁ならPrestige画面に育成継続の選択肢を案内する。強制制限はない。
 
-正式リリースまではBalance間のSave互換性を保証しない。speed-6以外は明示的に拒否し、自動変換/wipeは行わない。旧SaveのExportと確認付き新規開始を用意する。現行版同士のSave往復・current/backupは維持する。Issue #9の互換記述は当時の記録であり現行方針ではない。
+正式リリースまではBalance間のSave互換性を保証しない。speed-7以外は明示的に拒否し、自動変換/wipeは行わない。旧SaveのExportと確認付き新規開始を用意する。現行版同士のSave往復・current/backupは維持する。Issue #9の互換記述は当時の記録であり現行方針ではない。
 
 Issue #15はStage701以降の追加HP成長のみ変更。Stage700以下、Required +50、MASTERY、恒久強化、AUTO ADVANCE、UIは維持。[詳細・検証](DEEP_HP_DESIGN.md)。
 
 Issue #17: Required Stage800 capとDeep MASTERYを同時導入。speed-6。HP・Gold・SOUL・通常/恒久Upgrade・BURST・AUTO ADVANCEは変更しない。[仕様・戦略比較](PRESTIGE_CAP_DESIGN.md)。
+
+Issue #19はspeed-7。旧speed-6は自動変換せず明示拒否・原文Export・手動新規開始を維持する。操作削減、5案と4自動購入方針の[比較と採用根拠](PRESTIGE_PASSIVES_DESIGN.md)。

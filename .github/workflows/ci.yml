@@ -22,11 +22,12 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
-      - name: Check balance reference and deep HP candidates
+      - name: Check historical and current balance references
         run: |
           python docs/balance/simulate.py --check
           python docs/balance/deep_hp.py --check
           python docs/balance/prestige_cap.py --check
+          python docs/balance/passives.py --check
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

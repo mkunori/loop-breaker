@@ -1,3 +1,5 @@
+> 過去Balanceの比較記録。現行speed-7の差分は[PRESTIGE_PASSIVES_DESIGN](PRESTIGE_PASSIVES_DESIGN.md)を参照。
+
 # Prestige cap800・Deep MASTERY分離 — Issue #17 / speed-6
 
 LOOP BREAKERは巨大数を増やしながらClear Timeの桁を削るゲーム。深部で停滞したらStage800でいつでもPrestigeしてFarmをやり直せるようにし、単純なPrestige回数では追加MASTERYを増やさない。HP曲線や他の成長式はspeed-5と同一。

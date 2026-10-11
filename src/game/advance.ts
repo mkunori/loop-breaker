@@ -1,14 +1,12 @@
-import { BALANCE, UPGRADE_IDS } from "../config/balance";
+import { BALANCE, PASSIVE_IDS, UPGRADE_IDS } from "../config/balance";
+import { autoPurchase } from "./automation";
 import {
   autoAdvanceCeiling,
   autoAdvanceTarget,
   boundary,
-  bulkPrice,
-  cap,
   clearTime,
   type Diagnostics,
   goldPerClear,
-  maxBuy,
   rangeTotals,
   stageAt,
 } from "./math";
@@ -88,10 +86,38 @@ function unlocks(s: GameState, events: GameEvent[]): void {
       events.push({ kind: "unlock", label: BALANCE.upgrades[id].label });
     }
   }
+  for (const id of PASSIVE_IDS) {
+    if (
+      !s.meta.unlocks[id] &&
+      (s.meta.prestigeCount > 0 ||
+        s.run.clears.gte(BALANCE.passives[id].unlock))
+    ) {
+      s.meta.unlocks[id] = true;
+      events.push({
+        kind: "unlock",
+        label: `${BALANCE.passives[id].label} パッシブ`,
+      });
+    }
+  }
   if (!s.meta.unlocks.autoAtk && s.run.clears.gte(BALANCE.autoUnlock)) {
     s.meta.unlocks.autoAtk = true;
     events.push({ kind: "unlock", label: "AUTO ATK" });
   }
+}
+// Only three P0 effect boundaries; split before the effect changes, not per CLEAR.
+function untilPassive(s: GameState, diag: Diagnostics): number {
+  if (s.meta.prestigeCount > 0) return Infinity;
+  const next = PASSIVE_IDS.map((id) => BALANCE.passives[id].unlock).find((n) =>
+    s.run.clears.lt(n),
+  );
+  if (next === undefined) return Infinity;
+  const n = next - s.run.clears.toNumber();
+  return clearTime(s)
+    .mul(1 - s.run.phase)
+    .add(
+      rangeTotals(s, s.run.routeClears + 1, s.run.routeClears + n, diag).time,
+    )
+    .toNumber();
 }
 // Ability/Stage increases monotonically within this interval. Limit at the first
 // Stage where BURST must exit, so even a fast Stage jump preserves window timing.
@@ -204,6 +230,7 @@ export function advance(
   const s = cloneState(input),
     events: GameEvent[] = [],
     diag: Diagnostics = { segments: 0, stageComparisons: 0, formulaGroups: 0 };
+  const routeWasUnlocked = s.stats.highestStage >= BALANCE.autoRouteStage;
   let left = elapsed;
   s.run.targetStage = autoAdvanceTarget(s);
   reconcileMode(s, events);
@@ -212,7 +239,13 @@ export function advance(
     const untilBurst = s.run.burst.active
       ? BALANCE.burst.window - s.run.burst.seconds
       : Infinity;
-    const dt = Math.min(left, untilAuto, untilBurst, untilModeExit(s, diag));
+    const dt = Math.min(
+      left,
+      untilAuto,
+      untilBurst,
+      untilModeExit(s, diag),
+      untilPassive(s, diag),
+    );
     if (dt <= 0) {
       reconcileMode(s, events);
       throw new Error("時間境界が収束しません");
@@ -235,20 +268,15 @@ export function advance(
       BALANCE.autoInterval - 8 * Number.EPSILON * BALANCE.autoInterval
     ) {
       s.run.autoClock = 0;
-      if (s.automation.atkEnabled && s.meta.unlocks.autoAtk) {
-        const budget = s.run.gold.sub(s.automation.reserveGold).max(0);
-        const n = maxBuy(
-          "atk",
-          s.run.upgrades.atk,
-          budget,
-          cap("atk", s.meta.prestigeCount),
-        );
-        s.run.gold = s.run.gold.sub(bulkPrice("atk", s.run.upgrades.atk, n));
-        s.run.upgrades.atk += n;
-      }
+      autoPurchase(s);
     }
     reconcileMode(s, events);
   }
+  if (!routeWasUnlocked && s.stats.highestStage >= BALANCE.autoRouteStage)
+    events.push({
+      kind: "unlock",
+      label: "AUTO ROUTE / UPGRADESでONにできます",
+    });
   if (
     !validBig(s.run.gold) ||
     !validBig(s.stats.totalClears) ||

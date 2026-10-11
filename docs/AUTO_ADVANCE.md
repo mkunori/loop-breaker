@@ -1,4 +1,6 @@
-> speed-4当時の記録。現行speed-6のPrestige cap・Deep MASTERY・Save方針は[PRESTIGE_CAP_DESIGN](PRESTIGE_CAP_DESIGN.md)、維持した深部HPは[DEEP_HP_DESIGN](DEEP_HP_DESIGN.md)を参照。AUTO ADVANCEの仕様・式とsaveVersion1は維持。旧Balance移行は行わない。
+> 現行speed-7のパッシブ/AUTO ROUTE/Save方針は[PRESTIGE_PASSIVES_DESIGN](PRESTIGE_PASSIVES_DESIGN.md)。AUTO ADVANCEのTarget更新式・操作は変更なし。
+
+> speed-4当時の記録。speed-6当時のPrestige cap・Deep MASTERY・Save方針は[PRESTIGE_CAP_DESIGN](PRESTIGE_CAP_DESIGN.md)、維持した深部HPは[DEEP_HP_DESIGN](DEEP_HP_DESIGN.md)を参照。AUTO ADVANCEの仕様・式とsaveVersion1は維持。旧Balance移行は行わない。
 
 # Issue #13: AUTO ADVANCE
 

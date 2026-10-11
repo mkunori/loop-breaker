@@ -58,8 +58,11 @@ python docs/balance/simulate.py
 python docs/balance/simulate.py --check
 python docs/balance/deep_hp.py --check
 python docs/balance/prestige_cap.py --check
+python docs/balance/passives.py --check
 ```
 
 [深部HP曲線の比較と実プレイ回帰](docs/DEEP_HP_DESIGN.md): Stage700以下を維持し、深部追加成長のみ段階的に緩和。
 
-[Prestige Stage800 cap・Deep MASTERY](docs/PRESTIGE_CAP_DESIGN.md): speed-6。Stage800攻略後は深部へ進んでもPrestigeで脱出可能。追加の周回圧縮はStage850以降のDeep milestoneをPrestigeで確定して獲得します。speed-5を含む旧Balance Saveは自動変換せず、原文Exportと手動新規開始を用意します。
+[Prestige Stage800 cap・Deep MASTERY](docs/PRESTIGE_CAP_DESIGN.md): speed-6で導入、speed-7でも維持。Stage800攻略後は深部へ進んでもPrestigeで脱出可能。追加の周回圧縮はStage850以降のDeep milestoneをPrestigeで確定して獲得します。speed-6を含む旧Balance Saveは自動変換せず、原文Exportと手動新規開始を用意します。
+
+[Prestigeパッシブ・AUTO ROUTE（speed-7）](docs/PRESTIGE_PASSIVES_DESIGN.md): Gold購入はATK/Routeのみ。Speed/Critical/Overkillは無料で自動成長。Stage900でAUTO ROUTEを解禁しUPGRADESからONにできます。旧speed-6は明示拒否・原文保持、手動新規開始が必要です。既存3simulationは過去Balance比較、現行はpassives.pyです。

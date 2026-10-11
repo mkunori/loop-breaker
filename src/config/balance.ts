@@ -1,5 +1,5 @@
 export const BALANCE = {
-  version: "speed-6",
+  version: "speed-7",
   hp: {
     normal: 30,
     boss: 120,
@@ -26,16 +26,19 @@ export const BALANCE = {
     delayStep: 3,
     first: 1,
     speed: 8,
-    crit: 8,
-    overkill: 8,
+    crit: 10,
+    overkill: 10,
     delay: 30,
     cadence: 2,
   },
+  passiveDeep: { startPrestige: 16, floor: 8, max: 12 },
+  passives: {
+    speed: { label: "Attack Speed", unlock: 6 },
+    crit: { label: "Critical", unlock: 20 },
+    overkill: { label: "Overkill", unlock: 40 },
+  },
   upgrades: {
     atk: { label: "ATK", base: 35, growth: 1.12, unlock: 0 },
-    speed: { label: "Attack Speed", base: 10, growth: 2.2, unlock: 6 },
-    crit: { label: "Critical", base: 10, growth: 2.2, unlock: 20 },
-    overkill: { label: "Overkill", base: 10, growth: 2.2, unlock: 40 },
     delay: { label: "Route Compression", base: 2000, growth: 1.8, unlock: 70 },
   },
   soul: { base: 4, exponent: 1.5, secondBonus: 4, costGrowth: 1.7 },
@@ -53,6 +56,7 @@ export const BALANCE = {
     deepen: 25,
   },
   autoUnlock: 120,
+  autoRouteStage: 900,
   autoInterval: 1,
   burst: { enter: 0.001, exit: 0.0011, window: 5 },
   limits: {
@@ -63,6 +67,8 @@ export const BALANCE = {
     exactCount: Number.MAX_SAFE_INTEGER,
   },
 } as const;
+export type PassiveId = keyof typeof BALANCE.passives;
+export const PASSIVE_IDS = Object.keys(BALANCE.passives) as PassiveId[];
 export type UpgradeId = keyof typeof BALANCE.upgrades;
 export type PermanentId = keyof typeof BALANCE.permanent;
 export const UPGRADE_IDS = Object.keys(BALANCE.upgrades) as UpgradeId[];
@@ -109,6 +115,13 @@ export function validateBalance(config = BALANCE): void {
     config.stage.step,
     config.stage.deepen,
     config.caps.cadence,
+    config.caps.speed,
+    config.caps.crit,
+    config.caps.overkill,
+    config.passiveDeep.startPrestige,
+    config.passiveDeep.floor,
+    config.passiveDeep.max,
+    config.autoRouteStage,
     config.caps.delayFirst,
     config.caps.delayStep,
     config.masteryContinuation.after,
@@ -141,7 +154,9 @@ export function validateBalance(config = BALANCE): void {
     config.stage.prestigeCap !==
       config.stage.firstTarget +
         config.stage.step * (config.masteryContinuation.until - 2) ||
-    config.critChance * config.caps.crit > 1 ||
+    config.critChance > 1 ||
+    config.passiveDeep.max < config.caps.crit ||
+    config.passiveDeep.max < config.caps.overkill ||
     config.critMultiplier < 1 ||
     config.burst.exit <= config.burst.enter ||
     config.burst.window <= 0 ||

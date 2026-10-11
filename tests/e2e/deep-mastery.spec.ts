@@ -80,7 +80,7 @@ test("Prestige sheet separates escape from Deep rewards, applies only on reset a
   if (!path) throw new Error("Export missing");
   const text = readFileSync(path, "utf8"),
     saved = JSON.parse(text);
-  expect(saved.balanceVersion).toBe("speed-6");
+  expect(saved.balanceVersion).toBe("speed-7");
   expect(saved.meta.deepMasteryLevel).toBe(3);
   expect(saved.meta.prestigeCount).toBe(17);
   expect(saved.run.targetStage).toBe(800);

@@ -41,7 +41,7 @@ function zoneSave(stage: number, boss = false) {
   raw.run.routeClears = 5 * (stage - 1);
   raw.run.clears = String(raw.run.routeClears);
   raw.run.highestClearedStage = stage === 1 ? 0 : stage - 1;
-  raw.run.upgrades = { atk: 0, speed: 0, crit: 0, overkill: 0, delay: 0 };
+  raw.run.upgrades = { atk: 0, delay: 0 };
   raw.run.phase = boss ? 0.75 : 0;
   raw.run.burst = { active: false, seconds: 0, clears: "0", gold: "0" };
   raw.stats.totalClears = raw.run.clears;
@@ -165,9 +165,6 @@ test("BURST uses fixed decoration and both Reduced Motion controls stop animatio
   inflated.stats.highestStage = 2950;
   inflated.run.upgrades = {
     atk: 1000,
-    speed: 8,
-    crit: 8,
-    overkill: 8,
     delay: 30,
   };
   inflated.automation.atkEnabled = false;

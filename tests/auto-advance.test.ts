@@ -95,7 +95,7 @@ describe("aggregate auto targets", () => {
   it("shares AUTO ATK clock boundaries without introducing new purchase opportunities", () => {
     const s = enable(ready(false));
     s.run.gold = D(1e12);
-    s.run.upgrades = { atk: 70, speed: 3, crit: 2, overkill: 2, delay: 12 };
+    s.run.upgrades = { atk: 70, delay: 12 };
     s.meta.unlocks.autoAtk = true;
     s.automation.atkEnabled = true;
     const whole = advance(s, 5).state;
@@ -116,9 +116,6 @@ describe("aggregate auto targets", () => {
     reference.stats.totalClears = D(reference.run.routeClears);
     reference.run.upgrades = {
       atk: 70,
-      speed: 3,
-      crit: 2,
-      overkill: 2,
       delay: 12,
     };
     reference.run.phase = 0.35;
@@ -153,7 +150,7 @@ describe("aggregate auto targets", () => {
     const s = ready(false);
     s.meta.prestigeCount = 59;
     s.meta.upgrades = { power: 150, wealth: 150, tempo: 120 };
-    s.run.upgrades = { atk: 10000, speed: 8, crit: 8, overkill: 8, delay: 30 };
+    s.run.upgrades = { atk: 10000, delay: 30 };
     const result = advance(enable(s), 5);
     expect(result.state.run.targetStage).toBeGreaterThan(50000);
     expect(result.state.run.targetStage % 25).toBe(0);

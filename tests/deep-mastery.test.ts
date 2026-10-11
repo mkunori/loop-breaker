@@ -121,7 +121,7 @@ describe("Prestige cap and Deep MASTERY", () => {
     s.run.targetStage = 850;
     s.run.routeClears = boundary(850);
     s.run.clears = D(s.run.routeClears);
-    s.run.upgrades = { atk: 55, speed: 8, crit: 8, overkill: 8, delay: 6 };
+    s.run.upgrades = { atk: 55, delay: 6 };
     s.meta.upgrades = { power: 10, wealth: 9, tempo: 9 };
     const crossed = advance(s, clearTime(s, 850).toNumber()).state;
     expect(crossed.run.highestClearedStage).toBe(850);

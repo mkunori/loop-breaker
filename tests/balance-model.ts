@@ -42,7 +42,7 @@ export function playModel(
         model === "immediate" ||
         (model === "casual" && seconds % 60 === 0)
       )
-        for (const id of ["speed", "crit", "overkill", "delay"] as const)
+        for (const id of ["delay"] as const)
           s = command(s, { type: "buy", id, max: true }).state;
       if (model !== "auto" || !s.meta.unlocks.autoAtk)
         s = command(s, { type: "buy", id: "atk", max: true }).state;

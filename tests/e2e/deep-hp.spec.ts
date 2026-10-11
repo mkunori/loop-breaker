@@ -31,7 +31,7 @@ test("reported P17 state reaches required Stage850 in under two minutes", async 
     (await page.evaluate(() => localStorage.getItem("loop-breaker.current"))) ??
       "{}",
   );
-  expect(saved.balanceVersion).toBe("speed-6");
+  expect(saved.balanceVersion).toBe("speed-7");
   expect(saved.run.highestClearedStage).toBeGreaterThanOrEqual(850);
   expect(saved.run.targetStage).toBeGreaterThanOrEqual(875);
   expect(saved.meta.prestigeCount).toBe(17);

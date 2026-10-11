@@ -1,4 +1,10 @@
-import { BALANCE, type PermanentId, type UpgradeId } from "../config/balance";
+import {
+  BALANCE,
+  PASSIVE_IDS,
+  type PassiveId,
+  type PermanentId,
+  type UpgradeId,
+} from "../config/balance";
 import { type Big, D } from "./number";
 import type { GameState } from "./state";
 export const boundary = (stage: number): number =>
@@ -73,27 +79,49 @@ export const mastery = (p: number, deepLevel = 0): Big =>
     ),
   );
 export function cap(id: UpgradeId, p: number): number {
-  if (id === "atk") return BALANCE.limits.level;
-  if (id === "delay")
-    return Math.min(
-      BALANCE.caps.delay,
-      BALANCE.caps.delayFirst + BALANCE.caps.delayStep * p,
-    );
-  if (id === "speed")
-    return Math.min(
-      BALANCE.caps.speed,
-      BALANCE.caps.first + Math.floor((p + 1) / BALANCE.caps.cadence),
-    );
-  if (id === "crit")
-    return Math.min(
-      BALANCE.caps.crit,
-      BALANCE.caps.first + Math.floor(p / BALANCE.caps.cadence),
-    );
-  return Math.min(
-    BALANCE.caps[id],
-    BALANCE.caps.first + Math.floor(Math.max(0, p - 1) / BALANCE.caps.cadence),
-  );
+  return id === "atk"
+    ? BALANCE.limits.level
+    : Math.min(
+        BALANCE.caps.delay,
+        BALANCE.caps.delayFirst + BALANCE.caps.delayStep * p,
+      );
 }
+export function prestigePassives(
+  p: number,
+  deep: number,
+): Record<PassiveId, number> {
+  const { first, cadence } = BALANCE.caps;
+  const floor =
+    p >= BALANCE.passiveDeep.startPrestige
+      ? Math.min(BALANCE.passiveDeep.max, BALANCE.passiveDeep.floor + deep)
+      : 0;
+  return {
+    speed: Math.min(BALANCE.caps.speed, first + Math.floor((p + 1) / cadence)),
+    crit: Math.max(
+      floor,
+      Math.min(BALANCE.caps.crit, first + Math.floor(p / cadence)),
+    ),
+    overkill: Math.max(
+      floor,
+      Math.min(
+        BALANCE.caps.overkill,
+        first + Math.floor(Math.max(0, p - 1) / cadence),
+      ),
+    ),
+  };
+}
+export function passiveLevels(s: GameState): Record<PassiveId, number> {
+  if (s.meta.prestigeCount > 0)
+    return prestigePassives(s.meta.prestigeCount, s.meta.deepMasteryLevel);
+  return Object.fromEntries(
+    PASSIVE_IDS.map((id) => [
+      id,
+      Number(s.run.clears.gte(BALANCE.passives[id].unlock)),
+    ]),
+  ) as Record<PassiveId, number>;
+}
+export const autoRouteUnlocked = (s: GameState): boolean =>
+  s.stats.highestStage >= BALANCE.autoRouteStage;
 export const unlocked = (s: GameState, id: UpgradeId): boolean =>
   id === "atk" || s.meta.unlocks[id];
 export const damage = (s: GameState): Big =>
@@ -102,13 +130,15 @@ export const damage = (s: GameState): Big =>
     .mul(1 + BALANCE.damage.power * s.meta.upgrades.power);
 export const dps = (s: GameState): Big =>
   damage(s)
-    .mul(D(BALANCE.speedGrowth).pow(s.run.upgrades.speed))
+    .mul(D(BALANCE.speedGrowth).pow(passiveLevels(s).speed))
     .mul(
       1 +
-        BALANCE.critChance * (BALANCE.critMultiplier - 1) * s.run.upgrades.crit,
+        BALANCE.critChance *
+          (BALANCE.critMultiplier - 1) *
+          passiveLevels(s).crit,
     );
 export const overkill = (s: GameState): number =>
-  1 + BALANCE.overkill * s.run.upgrades.overkill;
+  1 + BALANCE.overkill * passiveLevels(s).overkill;
 export function hp(stage: number): Big {
   let value = D(
     BALANCE.hp.normal * BALANCE.hp.normalCount + BALANCE.hp.boss,

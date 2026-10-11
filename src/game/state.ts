@@ -1,4 +1,9 @@
-import { BALANCE, type PermanentId, type UpgradeId } from "../config/balance";
+import {
+  BALANCE,
+  type PassiveId,
+  type PermanentId,
+  type UpgradeId,
+} from "../config/balance";
 import { type Big, D } from "./number";
 export interface BurstResult {
   seconds: number;
@@ -25,10 +30,14 @@ export interface GameState {
     deepMasteryLevel: number;
     soul: Big;
     upgrades: Record<PermanentId, number>;
-    unlocks: Record<Exclude<UpgradeId, "atk"> | "autoAtk" | "burst", boolean>;
+    unlocks: Record<
+      PassiveId | Exclude<UpgradeId, "atk"> | "autoAtk" | "burst",
+      boolean
+    >;
   };
   automation: {
     atkEnabled: boolean;
+    routeEnabled: boolean;
     reserveGold: Big;
     autoAdvanceEnabled: boolean;
   };
@@ -54,7 +63,7 @@ export function initialState(): GameState {
       phase: 0,
       activeSeconds: 0,
       highestClearedStage: 0,
-      upgrades: { atk: 0, speed: 0, crit: 0, overkill: 0, delay: 0 },
+      upgrades: { atk: 0, delay: 0 },
       approximateClears: false,
       autoClock: 0,
       burst: { active: false, seconds: 0, clears: D(0), gold: D(0) },
@@ -75,6 +84,7 @@ export function initialState(): GameState {
     },
     automation: {
       atkEnabled: false,
+      routeEnabled: false,
       reserveGold: D(0),
       autoAdvanceEnabled: false,
     },

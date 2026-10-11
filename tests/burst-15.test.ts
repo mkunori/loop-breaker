@@ -4,6 +4,7 @@ import { clearTime, fixedDelay, mastery } from "../src/game/math";
 import { D } from "../src/game/number";
 import { initialState } from "../src/game/state";
 import { playModel } from "./balance-model";
+import reference from "./data/speed7-reference.json";
 
 describe("15-minute BURST", () => {
   it("distinguishes active, casual and true AUTO ATK play", () => {
@@ -52,19 +53,15 @@ describe("Immediate Prestige", () => {
     const result = playModel("immediate", 51);
     console.log("Immediate Prestige:", result);
     expect(result.burst).toBeGreaterThan(933);
-    expect(result.burst).toBeGreaterThan(1200);
-    expect(result.burst).toBeLessThan(1500);
+    expect(result.burst).toBeGreaterThan(1000);
+    expect(result.burst).toBeLessThan(1050);
+    // Free Prestige passives shorten early resets; speed-6 remains in Python baseline.
     expect(result.times[11]).toBeGreaterThan(result.times[9]);
     expect(Math.max(...result.times.slice(20))).toBeLessThan(240);
     expect(Math.min(...result.times.slice(20))).toBeGreaterThan(60);
     expect(result.state.meta.deepMasteryLevel).toBe(0);
     expect(result.times[30] / result.times[20]).toBeLessThan(1.3);
-    const reference = [
-      354.03, 102.03, 45.74, 45.91, 41.41, 31.89, 27.85, 25.16, 22.61, 22.9,
-      23.15, 25.16, 41.4, 55.76, 86.64, 139.42, 178.96,
-    ];
-    // Stage<=700 matches the legacy curve; deeper references use Candidate B.
-    reference.forEach((t, i) => {
+    reference.immediate.forEach((t, i) => {
       expect(Math.abs(result.times[i] - t)).toBeLessThan(Math.max(4, t * 0.01));
     });
   });

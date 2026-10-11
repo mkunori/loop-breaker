@@ -1,7 +1,6 @@
-# LOOP BREAKER — バランス設計 v6 / speed-6
+# LOOP BREAKER — バランス設計 speed-7
 
-Issue #17でRequired Stage800 capとDeep MASTERYを分離。HP曲線はspeed-5のまま。[P15〜P50・3案×3戦略比較](PRESTIGE_CAP_DESIGN.md)。
-Issue #15で深部HPのみ再調整。[候補比較・P30・実プレイ回帰](DEEP_HP_DESIGN.md)。他の設定はIssue #11仕様を維持。LOOP BREAKERは「巨大数を増やしながらClear Timeの桁を削っていくゲーム」。新規5秒RUNから秒→ms→μs→BURSTへ進む。[候補比較・互換性](BURST_15_DESIGN.md)、[Active結果](balance/issue-11-active.txt)、[Casual](balance/issue-11-casual.txt)、[AUTO Only](balance/issue-11-auto.txt)、`python docs/balance/simulate.py --check`を参照。旧prototype-2はgit履歴とIMPLEMENTATION_NOTESの過去記録に残る。
+Issue #19: Gold購入をATK/Routeだけにし、Speed/Critical/Overkillを無料Prestigeパッシブ化する。HP・Gold・SOUL・Stage・MASTERY・BURSTの係数はspeed-6と同じ。[5案/3戦略/4AUTO方針の比較](PRESTIGE_PASSIVES_DESIGN.md)、[全チェックポイントCSV](balance/issue19-comparison.csv)。
 
 ## 数式と設定
 
@@ -13,7 +12,7 @@ HP growth(s) = 1.002^(s−1)
 通常4体 = 各30 × growth(s)、Boss = 120 × growth(s)、合計240
 Damage = 60 × 1.16^ATK × (1 + .70 POWER)
 DPS = Damage × 1.25^Speed × (1 + .20 Crit)
-Crit率=.10×Lv（最大80%）、Crit倍率3（期待値のみ）
+Crit期待値係数=.10×Lv、倍率3を使う従来線形式を維持（Lv12で期待Damage3.4倍）
 Overkill倍率 = 1 + .15 Overkill
 Combat Time = 合計HP / (DPS × Overkill倍率)
 Fixed Delay = 1 × .85^TEMPO / (.94^(-ATK) + .60^(-Route) − 1)
@@ -29,47 +28,53 @@ SOUL = floor(4 × (最高CLEAR Stage / 100)^1.5) + (2回目のみ4)
 恒久価格 = ceil(base × 1.7^Lv)、POWER/WEALTH base1、TEMPO base2
 ```
 
-初期HP240 / Damage60 + 待ち1秒 = **5秒**。HP/Gold/Crit/Overkill/SOUL/恒久効果は維持。speed-3からATK価格100/1.2→35/1.12、Route価格100→2000、待ち式へ弱いATK短縮を追加、Stage密度40→5、Route上限6+2p→6+3p、解禁CLEARを変更。BREAK II以降の継続12%短縮はP16到達まで維持。以後はDeep MASTERYだけで追加し、Stage800の単純Prestige連打で継続倍率を増やさない。
+## パッシブ
 
-| 強化 | base | growth | CLEAR解禁 | 上限（p=完了Prestige数） |
+P0では6/20/40 CLEARでSpeed/Crit/Overkill各Lv1を自動適用、解禁前0。P1以降は下記。p=完了Prestige、d=確定済みDeep。購入費0、確定DeepはPrestige時のみ更新する。
+
+```text
+Speed = min(8,1+floor((p+1)/2))
+CritRegular = min(10,1+floor(p/2))
+OverkillRegular = min(10,1+floor(max(0,p−1)/2))
+DeepFloor = p>=16 ? min(12,8+d) : 0
+Crit = max(CritRegular,DeepFloor)
+Overkill = max(OverkillRegular,DeepFloor)
+```
+
+## 購入・AUTO
+
+| 強化 | base | growth | 解禁CLEAR | 上限 |
 |---|---:|---:|---:|---|
-| ATK | 35 | 1.12 | 0 | 数値保護1e6 |
-| Speed | 10 | 2.2 | 6 | min(8,1+floor((p+1)/2)) |
-| Crit | 10 | 2.2 | 20 | min(8,1+floor(p/2)) |
-| Overkill | 10 | 2.2 | 40 | min(8,1+floor(max(0,p−1)/2)) |
-| Route | 2000 | 1.8 | 70 | min(30,6+3p) |
+|ATK|35|1.12|0|数値保護1e6|
+|Route|2000|1.8|70|min(30,6+3p)|
 
-AUTO解禁120 CLEAR、1秒毎ATK MAX・予約Goldあり。解禁済みフラグはPrestige・現行Saveの再ロードで維持する。
+AUTO ATKは120 CLEAR、AUTO ROUTEは生涯Stage900 CLEARで解禁。両方1秒時計、共通予約Goldを残す。単独ONならそのUpgradeをMAX。両ONは次1LvのClear Time短縮量÷価格の大きい候補を先にMAXし残額で他方、同率ATK。優先候補の資金不足時は購入せず貯める。Route cap時はATKのみ。比較は2候補だけ、Lv/CLEARごとの本体loopなし。[比較理由・資金待ち](PRESTIGE_PASSIVES_DESIGN.md)。
 
 ## Stage・Prestige・BURST
 
-Stage開始境界 `5×(s−1)`、現在Stage `min(target,1+floor(routeClears/5))`。Stage100到達495、攻略496。Stage150到達745、攻略746。目標は最初3Cycleが100、以後150→200→250…→800 cap、さらに進むは攻略後+25。目標での稼ぎを次Stage進行へ流用しない。待ち時間ゲートはない。
+Stage境界5×(s−1)、100到達495/攻略496。Required最初3Cycle100、以後+50で800 cap。攻略後のFarmを経路進行へ流用しない。+25深化/AUTO ADVANCEは同じ。Stage800攻略後は任意深部でもPrestige可能。Deep850/900/950/1000で1/2/3/4を確定時max取得、同じmilestone再取得なし。
 
-BURST enter `<.001秒`（1ms）、exit `>=.0011秒`。5秒集計・通常/BURST共通積分・端数繰越・部分窓は維持。100ms/10ms/1msを比較し、msの通常高速戦闘を残す1msを選択。μs表示はBURST中も残る。
+BURST enter<.001秒、exit>=.0011秒、5秒集計・共通積分・端数/部分窓を維持。
 
 ## 参考進行
 
-Active Farm / Casual / AUTO Onlyは初回2回を攻略後Prestige、3Cycle目は目標Stageで初BURSTまで育成、以後は攻略時Prestige。Immediate Prestigeは全Cycleで攻略後即Prestigeし、購入はActiveと同じ。これはプレイヤー参考方針で、待ちゲート/自動Prestigeではない。Activeは1秒毎非ATK優先MAX→ATK、Casualは非ATK60秒毎、AUTO Onlyは非ATKなし・解禁後は実AUTO。恒久は低Lv優先・SOUL実支払と繰越。
+Activeは毎秒Route MAX→ATK MAX、CasualはRouteのみ60秒毎、AUTO OnlyはRouteなし。初回2回は攻略直後Prestige、3Cycle目はStage100で初BURSTまでFarm。入力待ち時間なし。恒久は低Lv優先、実SOUL支払と繰越。AUTO ROUTEは900前なのでこの初回Farmへ介入しない。
 
-| Active時点 | Clear Time / 結果 |
-|---|---|
-| 開始 | 5.00s |
-| 初購入 | 20秒 |
-| 1分 | 2.89s |
-| 1秒未満 | 158秒 |
-| 初Prestige | 354.03秒、282ms、4 SOUL |
-| Cycle2 | 102.03秒、開始1.762s→終了87.6ms、8 SOUL |
-| Cycle3 | 初BURSTまで477秒、開始860ms→終了約800μs、4 SOUL |
-| 100ms未満 | 累積450.03秒 |
-| 10ms未満 | 累積576.06秒 |
-| 初1ms未満・BURST | 累積933.06秒 / Cycle3 Stage100 |
+| 指標 | speed-6 | speed-7 |
+|---|---:|---:|
+|初期RUN|5.00s|5.00s|
+|初Prestige|354.03秒|347.88秒|
+|Active初BURST|933.06秒|920.08秒|
+|Casual初BURST|1082.87秒|985.08秒|
+|AUTO Only初BURST|1389.89秒|1256.08秒|
+|Escape P20|190.97秒|127.41秒|
+|Escape P30|122.72秒|84.55秒|
+|Escape P50|98.58秒|68.40秒|
 
-AUTO解禁195.41秒。Active初BURST933.06秒、Casual1082.87秒、AUTO Only1389.89秒はspeed-5と一致。Immediate Prestigeは1277.04秒（21:17、speed-5比+1秒）。初Prestige354.03秒。P0〜P16のRequired攻略Cycle時間はspeed-5と一致。P17実プレイfixtureのStage807→850は新MASTERY固定後77秒（speed-5時68秒）、目標2分以内を維持。HPそのものはspeed-5と完全同一。[回帰出力](balance/issue-17-regression.txt)。P20〜P50 Escapeは98.58〜190.97秒/Cycle。[戦略比較・SOUL/min](PRESTIGE_CAP_DESIGN.md)。
+新Active 1秒/100ms/10ms/1ms到達は151/438.88/562.08/920.08秒。第2Cycle97.20秒、第3Cycle475秒。本体1秒判断の端数込みでは348/98/475秒、初BURST921秒。P17実プレイfixtureは無料Crit/Overkill9により807→850が77→67秒。HPは同じ。
 
-## 精度・互換性
+## 再現・互換性
 
-Issue #13はQoLのみ。AUTO ADVANCE OFFなら以下のバランスと参照時間は変更なし。ONは攻略後の+25を自動実行するため深部HPへ早く進むが、計算式・価格・上限・解禁・Prestige条件・SOUL・MASTERY・BURST閾値は無変更。[AUTO_ADVANCE](AUTO_ADVANCE.md)を参照。
+既存simulate.py / deep_hp.py / prestige_cap.pyは過去speed-6等の比較基準を凍結し、--checkを維持。現行はpassives.py --check、CSV出力と本体照合テストを使用する。参照PythonのみCLEAR列挙、本体は集約式。
 
-本体はBigと数式一括計算を維持。Stage密度は周期1で、幾何/等差数列と二分探索を既存モデルで継続する。表示丸めを計算に戻さない。Python参照だけCLEARを列挙する。
-
-Save Version1 / balanceVersion speed-6。正式リリースまではBalance間のSave互換性を保証しない。異なるbalanceVersionは明示的に拒否し、経路変換も暗黙の読替えも行わない。旧Saveの原文を残しExport可能にして、新規開始はユーザーの確認後のみ。現行版同士のSave / reload / Export / Importとcurrent / backupは維持。経路進行は実CLEAR以下を検証する。
+saveVersion1 / balanceVersion speed-7。旧speed-6を含む異なるBalanceは明示拒否し、migration/暗黙の読替え/自動wipeなし。原文Exportとユーザー確認付き新規開始を維持。現行同士のcurrent/backup・Save/reload・Export/Importを保証する。

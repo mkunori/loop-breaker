@@ -1,3 +1,5 @@
+> 過去Balanceの比較記録。現行speed-7の差分は[PRESTIGE_PASSIVES_DESIGN](PRESTIGE_PASSIVES_DESIGN.md)を参照。
+
 # 深部HP曲線 / Issue #15 / speed-5
 
 この文書はIssue #15 / speed-5のHP比較記録です。現行speed-6はHPを完全維持し、Required/MASTERYだけ変更します。[最新Prestige設計・回帰](PRESTIGE_CAP_DESIGN.md)。歴史的P17の68秒に対し、現行MASTERYで同fixtureは77秒です。

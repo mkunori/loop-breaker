@@ -18,7 +18,7 @@ test("Quick Buy keeps two cards and numeric HUD visible with all details in the 
   const raw = JSON.parse(fixture("prestige"));
   raw.meta.prestigeCount = 2;
   raw.meta.unlocks.burst = false;
-  raw.run.upgrades = { atk: 50, speed: 2, crit: 2, overkill: 1, delay: 8 };
+  raw.run.upgrades = { atk: 50, delay: 8 };
   raw.run.gold = "1e8";
   raw.automation.atkEnabled = false;
   await page.getByRole("button", { name: "設定・Save" }).click();
@@ -57,7 +57,7 @@ test("Quick Buy keeps two cards and numeric HUD visible with all details in the 
   await expect(page.getByTestId("clear-time")).toContainText(next);
   await page.getByRole("button", { name: "UPGRADES" }).click();
   const detail = page.locator(".all-upgrades");
-  await expect(detail.locator("button")).toHaveCount(5);
+  await expect(detail.locator("button")).toHaveCount(2);
   await expect(detail.getByTestId("buy-delay")).toContainText("Cap 12");
   await expect(detail.getByTestId("buy-atk")).toContainText("Damage ×1.16");
   await expect(detail.getByTestId("buy-delay")).toContainText("Route待ち係数");
@@ -117,7 +117,7 @@ test("current balance Save reload and Export / Import preserve progress", async 
   const path = await (await download).path();
   if (!path) throw new Error("Export missing");
   const save = JSON.parse(readFileSync(path, "utf8"));
-  expect(save.balanceVersion).toBe("speed-6");
+  expect(save.balanceVersion).toBe("speed-7");
   expect(save.saveVersion).toBe(1);
   expect(save.run.routeClears).toBe(496);
   expect(Number(save.run.clears)).toBe(496);
@@ -133,7 +133,13 @@ test("current balance Save reload and Export / Import preserve progress", async 
   await expect(page.getByTestId("stage")).toHaveText("100");
 });
 
-for (const version of ["development-old", "speed-3", "speed-4", "speed-5"]) {
+for (const version of [
+  "development-old",
+  "speed-3",
+  "speed-4",
+  "speed-5",
+  "speed-6",
+]) {
   test(`unsupported ${version} is not overwritten and can be explicitly replaced with a new game`, async ({
     page,
   }) => {
@@ -171,6 +177,6 @@ for (const version of ["development-old", "speed-3", "speed-4", "speed-5"]) {
           localStorage.getItem("loop-breaker.current"),
         )) ?? "{}",
       ).balanceVersion,
-    ).toBe("speed-6");
+    ).toBe("speed-7");
   });
 }

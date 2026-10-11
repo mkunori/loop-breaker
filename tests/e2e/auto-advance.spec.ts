@@ -35,7 +35,7 @@ test("AUTO ADVANCE is outside Quick Buy, defaults OFF, roundtrips ON and survive
   await page.goto("./");
   await expect(page.getByLabel("AUTO ADVANCE", { exact: true })).toHaveCount(0);
   const raw = state();
-  delete raw.automation.autoAdvanceEnabled; // Existing same-balance speed-6 v1.
+  delete raw.automation.autoAdvanceEnabled; // Existing same-balance speed-7 v1.
   await importSave(page, JSON.stringify(raw));
   const toggle = page.getByLabel("AUTO ADVANCE", { exact: true });
   await expect(toggle).not.toBeChecked();
@@ -139,7 +139,7 @@ test("uncleared target is not skipped, while huge route traversal keeps DOM / co
   raw.run.clears = "14745";
   raw.stats.totalClears = "14745";
   raw.stats.highestStage = 2949;
-  raw.run.upgrades = { atk: 10000, speed: 8, crit: 8, overkill: 8, delay: 30 };
+  raw.run.upgrades = { atk: 10000, delay: 30 };
   raw.automation.autoAdvanceEnabled = true;
   raw.run.burst.active = true;
   await importSave(page, JSON.stringify(raw));

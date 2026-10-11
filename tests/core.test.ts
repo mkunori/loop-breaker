@@ -7,6 +7,7 @@ import { D, format, splitWork } from "../src/game/number";
 import { decode, encode } from "../src/game/save";
 import { type GameState, initialState } from "../src/game/state";
 import { playModel } from "./balance-model";
+import reference from "./data/speed7-reference.json";
 
 const almost = (a: { toNumber(): number }, b: number) =>
   expect(a.toNumber()).toBeCloseTo(b, 8);
@@ -29,7 +30,7 @@ describe("balance math", () => {
       expect(() => validateBalance(config)).toThrow();
     }
     const config = structuredClone(BALANCE);
-    Object.assign(config, { critChance: 0.2 });
+    Object.assign(config, { critChance: 1.1 });
     expect(() => validateBalance(config)).toThrow();
   });
   it("calculates damage, Crit expectation, Overkill, TEMPO and mastery", () => {
@@ -41,27 +42,29 @@ describe("balance math", () => {
     almost(math.damage(s), 69.6);
     s.meta.upgrades.power = 1;
     almost(math.damage(s), 118.32);
-    s.run.upgrades.speed = 1;
-    s.run.upgrades.crit = 1;
+    s.run.clears = D(20); // P0 free Speed/Critical unlocks.
     almost(math.dps(s), 118.32 * 1.25 * 1.2);
-    s.run.upgrades.overkill = 1;
+    s.run.clears = D(40);
     expect(math.overkill(s)).toBe(1.15);
     const before = math.clearTime(s);
     s.meta.upgrades.tempo = 1;
     almost(before.sub(math.clearTime(s)), 0.141);
     s.meta.prestigeCount = 2;
-    almost(math.clearTime(s), before.sub(0.141).mul(0.36).toNumber());
+    almost(
+      math.clearTime(s),
+      (240 / (118.32 * 1.25 ** 2 * 1.4 * 1.15) + 0.94 * 0.85) * 0.36,
+    );
     almost(math.mastery(20), 0.36 * 0.88 ** 14);
   });
   it("defines caps and stage boundaries precisely", () => {
     expect(
       [0, 1, 2, 3, 9].map((p) => UPGRADE_IDS.map((id) => math.cap(id, p))),
     ).toEqual([
-      [1e6, 1, 1, 1, 6],
-      [1e6, 2, 1, 1, 9],
-      [1e6, 2, 2, 1, 12],
-      [1e6, 3, 2, 2, 15],
-      [1e6, 6, 5, 5, 30],
+      [1e6, 6],
+      [1e6, 9],
+      [1e6, 12],
+      [1e6, 15],
+      [1e6, 30],
     ]);
     const s = initialState();
     for (const [n, expected] of [
@@ -158,18 +161,23 @@ describe("advance and commands", () => {
     s.run.gold = D(35);
     s.run.phase = 0.7;
     expect(
-      command(s, { type: "buy", id: "crit" }).state.run.upgrades.crit,
+      command(s, { type: "buy", id: "delay" }).state.run.upgrades.delay,
     ).toBe(0);
     const bought = command(s, { type: "buy", id: "atk", max: true }).state;
     expect(bought.run.upgrades.atk).toBe(1);
     expect(bought.run.phase).toBe(0.7);
     expect(bought.run.gold.gte(0)).toBe(true);
-    s.meta.unlocks.speed = true;
-    const capped = command(command(s, { type: "buy", id: "speed" }).state, {
-      type: "buy",
-      id: "speed",
-    }).state;
-    expect(capped.run.upgrades.speed).toBe(1);
+    s.meta.unlocks.delay = true;
+    s.run.gold = D(1e8);
+    const capped = command(
+      command(s, { type: "buy", id: "delay", max: true }).state,
+      {
+        type: "buy",
+        id: "delay",
+        max: true,
+      },
+    ).state;
+    expect(capped.run.upgrades.delay).toBe(6);
   });
   it.each([0, 1, 2])("refuses deepen before three Prestiges (p=%s)", (p) => {
     const s = farmState();
@@ -337,7 +345,7 @@ describe("advance and commands", () => {
     s.meta.prestigeCount = 59;
     s.meta.upgrades = { power: 150, wealth: 150, tempo: 120 };
     s.run.targetStage = math.requiredStage(59);
-    s.run.upgrades = { atk: 1000, speed: 8, crit: 8, overkill: 8, delay: 30 };
+    s.run.upgrades = { atk: 1000, delay: 30 };
     for (const id of Object.keys(
       s.meta.unlocks,
     ) as (keyof typeof s.meta.unlocks)[])
@@ -369,12 +377,8 @@ describe("reference player through twelve cycles", () => {
   it("reproduces pacing, soul ledger and first BURST with the aggregate engine", () => {
     const result = playModel("active");
     console.log("Active progression:", result);
-    const reference = [
-      354.03, 102.03, 477.0, 45.91, 41.41, 31.89, 27.85, 25.16, 22.61, 22.9,
-      23.15, 25.16,
-    ];
     result.times.forEach((t, i) => {
-      expect(Math.abs(t - reference[i])).toBeLessThan(4);
+      expect(Math.abs(t - reference.active[i])).toBeLessThan(4);
     });
     expect(result.burst).toBeGreaterThan(780);
     expect(result.burst).toBeLessThan(1020);

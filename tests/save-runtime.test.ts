@@ -34,6 +34,7 @@ describe("Save validation and compact serialization", () => {
     "speed-3",
     "speed-4",
     "speed-5",
+    "speed-6",
     "unknown-development",
   ])("rejects unsupported balance %s without migration", (version) => {
     const raw = JSON.parse(fixture());
@@ -128,7 +129,7 @@ describe("Save validation and compact serialization", () => {
   });
 });
 describe("storage and runtime", () => {
-  it.each(["speed-3", "speed-4", "speed-5"])(
+  it.each(["speed-3", "speed-4", "speed-5", "speed-6"])(
     "preserves %s Save until explicit new game and rejects its Import",
     (version) => {
       const storage = new MemoryStorage();

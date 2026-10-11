@@ -1,6 +1,12 @@
 import { BALANCE, PERMANENT_IDS, UPGRADE_IDS } from "../config/balance";
 import { PRESENTATION } from "../config/presentation";
-import { boundary, cap, requiredStage, stageAt } from "./math";
+import {
+  autoRouteUnlocked,
+  boundary,
+  cap,
+  requiredStage,
+  stageAt,
+} from "./math";
 import { type Big, D, scientific, validBig } from "./number";
 import { type GameState, initialState } from "./state";
 export const SAVE_VERSION = 1;
@@ -99,6 +105,13 @@ export function decode(text: string): GameState {
   const mu = object(m.upgrades),
     ru = object(r.upgrades),
     flags = object(m.unlocks);
+  if (
+    Object.keys(ru).length !== UPGRADE_IDS.length ||
+    Object.keys(ru).some(
+      (id) => !UPGRADE_IDS.includes(id as (typeof UPGRADE_IDS)[number]),
+    )
+  )
+    throw new Error("購入LvはATK/Routeだけ保存してください");
   for (const id of PERMANENT_IDS)
     s.meta.upgrades[id] = numeric(mu[id], 0, BALANCE.limits.level, true);
   for (const id of UPGRADE_IDS)
@@ -182,6 +195,7 @@ export function decode(text: string): GameState {
         ? false
         : boolean(a.autoAdvanceEnabled),
     atkEnabled: boolean(a.atkEnabled),
+    routeEnabled: boolean(a.routeEnabled),
     reserveGold: big(a.reserveGold),
   };
   if (s.automation.atkEnabled && !s.meta.unlocks.autoAtk)
@@ -194,6 +208,8 @@ export function decode(text: string): GameState {
     BALANCE.limits.stage,
     true,
   );
+  if (s.automation.routeEnabled && !autoRouteUnlocked(s))
+    throw new Error("未解禁のAUTO ROUTE設定です");
   s.stats.activeSeconds = numeric(
     st.activeSeconds,
     s.run.activeSeconds,
